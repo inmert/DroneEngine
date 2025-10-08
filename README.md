@@ -7,7 +7,7 @@
   [![Unity Version](https://img.shields.io/badge/Unity-6.0%2B-black?style=for-the-badge&logo=unity)](https://unity.com/)
   [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
   [![Build Status](https://img.shields.io/badge/Build-Passing-success?style=for-the-badge)](https://github.com/velocitylabs/manta)
-  [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey?style=for-the-badge)](https://github.com/velocitylabs/manta)
+  [![Platform](https://img.shields.io/badge/Platform-Cross--Platform-lightgrey?style=for-the-badge)](https://github.com/velocitylabs/manta)
   
   **Advanced drone simulation and control platform with integrated sensor suite for industrial inspection and anomaly detection**
   
