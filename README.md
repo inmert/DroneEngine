@@ -245,9 +245,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 **Velocity Labs**  
-Website: [www.velocitylabs.com](https://velocitylabs.com)  
-Email: manta@velocitylabs.com  
-Twitter: [@VelocityLabs](https://twitter.com/velocitylabs)
+Website: [www.velocitylabs.space](https://velocitylabs.space)  
+Email: priyan@velocitylabs.space 
 
 ---
 
