@@ -1,2 +1,95 @@
-<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="root" style="flex-grow: 1; background-color: rgb(10, 12, 16);">
+        
+        <!-- Top Status Bar -->
+        <ui:VisualElement name="top-bar" style="flex-direction: row; justify-content: space-between; padding: 16px; background-color: rgba(20, 24, 32, 0.9); border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.1);">
+            <ui:Label text="FLIGHT SYSTEMS" style="-unity-font-style: bold; font-size: 14px; color: rgb(200, 210, 220); letter-spacing: 2px;" />
+            <ui:VisualElement style="flex-direction: row; align-items: center;">
+                <ui:Label name="status-indicator" text="●" style="color: rgb(0, 255, 128); font-size: 20px; margin-right: 8px;" />
+                <ui:Label text="OPERATIONAL" style="color: rgb(200, 210, 220); font-size: 12px;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Main Content Area -->
+        <ui:VisualElement name="main-content" style="flex-grow: 1; flex-direction: row; padding: 24px;">
+            
+            <!-- Left Panel - Flight Data -->
+            <ui:VisualElement name="left-panel" style="width: 280px; margin-right: 24px;">
+                <ui:Label text="TELEMETRY" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 16px; letter-spacing: 1px;" />
+                
+                <ui:VisualElement name="data-card" style="background-color: rgba(30, 35, 45, 0.6); padding: 16px; border-radius: 8px; margin-bottom: 16px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08);">
+                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 12px;">
+                        <ui:Label text="Altitude" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
+                        <ui:Label name="altitude-value" text="2,450 m" style="color: rgb(200, 210, 220); font-size: 16px; -unity-font-style: bold;" />
+                    </ui:VisualElement>
+                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 12px;">
+                        <ui:Label text="Speed" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
+                        <ui:Label name="speed-value" text="320 km/h" style="color: rgb(200, 210, 220); font-size: 16px; -unity-font-style: bold;" />
+                    </ui:VisualElement>
+                    <ui:VisualElement style="flex-direction: row; justify-content: space-between;">
+                        <ui:Label text="Heading" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
+                        <ui:Label name="heading-value" text="087°" style="color: rgb(200, 210, 220); font-size: 16px; -unity-font-style: bold;" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:Label text="ATTITUDE" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 16px; letter-spacing: 1px;" />
+                
+                <ui:VisualElement name="attitude-card" style="background-color: rgba(30, 35, 45, 0.6); padding: 16px; border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08);">
+                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 12px;">
+                        <ui:Label text="Pitch" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
+                        <ui:Label name="pitch-value" text="+5.2°" style="color: rgb(100, 180, 255); font-size: 14px;" />
+                    </ui:VisualElement>
+                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 12px;">
+                        <ui:Label text="Roll" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
+                        <ui:Label name="roll-value" text="-2.8°" style="color: rgb(100, 180, 255); font-size: 14px;" />
+                    </ui:VisualElement>
+                    <ui:VisualElement style="flex-direction: row; justify-content: space-between;">
+                        <ui:Label text="Yaw" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
+                        <ui:Label name="yaw-value" text="0.0°" style="color: rgb(100, 180, 255); font-size: 14px;" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Center - Artificial Horizon Placeholder -->
+            <ui:VisualElement name="center-panel" style="flex-grow: 1; justify-content: center; align-items: center;">
+                <ui:VisualElement name="horizon-display" style="width: 400px; height: 400px; background-color: rgba(30, 35, 45, 0.4); border-radius: 200px; border-width: 2px; border-color: rgba(100, 180, 255, 0.3); justify-content: center; align-items: center;">
+                    <ui:VisualElement style="width: 2px; height: 80px; background-color: rgba(255, 255, 255, 0.8);" />
+                    <ui:VisualElement style="width: 80px; height: 2px; background-color: rgba(255, 255, 255, 0.8); position: absolute;" />
+                    <ui:Label text="LEVEL" style="color: rgba(255, 255, 255, 0.4); font-size: 10px; margin-top: 60px; letter-spacing: 2px;" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Right Panel - Controls -->
+            <ui:VisualElement name="right-panel" style="width: 280px; margin-left: 24px;">
+                <ui:Label text="SYSTEMS" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 16px; letter-spacing: 1px;" />
+                
+                <ui:Button name="autopilot-btn" text="AUTOPILOT" style="height: 48px; margin-bottom: 12px; background-color: rgba(0, 255, 128, 0.15); border-radius: 6px; border-width: 1px; border-color: rgb(0, 255, 128); color: rgb(0, 255, 128); font-size: 12px; -unity-font-style: bold; letter-spacing: 1px;" />
+                
+                <ui:Button name="landing-gear-btn" text="LANDING GEAR" style="height: 48px; margin-bottom: 12px; background-color: rgba(50, 55, 70, 0.6); border-radius: 6px; border-width: 1px; border-color: rgba(255, 255, 255, 0.15); color: rgb(200, 210, 220); font-size: 12px; -unity-font-style: bold; letter-spacing: 1px;" />
+                
+                <ui:Button name="flaps-btn" text="FLAPS" style="height: 48px; margin-bottom: 24px; background-color: rgba(50, 55, 70, 0.6); border-radius: 6px; border-width: 1px; border-color: rgba(255, 255, 255, 0.15); color: rgb(200, 210, 220); font-size: 12px; -unity-font-style: bold; letter-spacing: 1px;" />
+
+                <ui:Label text="THROTTLE" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 12px; letter-spacing: 1px;" />
+                
+                <ui:VisualElement style="background-color: rgba(30, 35, 45, 0.6); padding: 16px; border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08);">
+                    <ui:Slider name="throttle-slider" high-value="100" low-value="0" value="65" show-input-field="false" style="margin-bottom: 8px;" />
+                    <ui:Label name="throttle-value" text="65%" style="color: rgb(200, 210, 220); font-size: 18px; -unity-font-style: bold; -unity-text-align: middle-center;" />
+                </ui:VisualElement>
+
+                <ui:VisualElement style="margin-top: 24px;">
+                    <ui:Label text="WARNINGS" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 12px; letter-spacing: 1px;" />
+                    <ui:VisualElement style="background-color: rgba(30, 35, 45, 0.6); padding: 12px; border-radius: 6px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08);">
+                        <ui:Label text="All systems nominal" style="color: rgba(255, 255, 255, 0.5); font-size: 11px; -unity-text-align: middle-center;" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Bottom Bar -->
+        <ui:VisualElement name="bottom-bar" style="flex-direction: row; justify-content: space-between; padding: 12px 16px; background-color: rgba(20, 24, 32, 0.9); border-top-width: 1px; border-top-color: rgba(255, 255, 255, 0.1);">
+            <ui:Label name="time-label" text="UTC 14:23:45" style="color: rgba(255, 255, 255, 0.5); font-size: 11px;" />
+            <ui:Label name="coords-label" text="LAT 45.5231 | LON -122.6765" style="color: rgba(255, 255, 255, 0.5); font-size: 11px;" />
+            <ui:Label name="fuel-label" text="FUEL 72%" style="color: rgba(255, 255, 255, 0.5); font-size: 11px;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
 </ui:UXML>
