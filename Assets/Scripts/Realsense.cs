@@ -6,53 +6,70 @@ using System;
 using System.Collections.Concurrent;
 
 /// <summary>
-/// OPTIMIZED RealSense D455 camera feed receiver
-/// Uses threading and texture pooling for better performance
+/// Complete DroneEngine UI Controller with RealSense D455 integration
+/// Includes tab management, sensor feeds, and optimized performance
 /// </summary>
-public class RealSenseFeedReceiver : MonoBehaviour
+public class DroneEngineController : MonoBehaviour
 {
     [Header("ROS Topics")]
-    [SerializeField] private string depthTopic = "/realsense/depth/compressed";
-    [SerializeField] private string irTopic = "/realsense/infrared/compressed";
-    [SerializeField] private string colorTopic = "/realsense/color/compressed";
+    [SerializeField] private string depthTopic = "/camera/camera/depth/image_rect_raw";
+    [SerializeField] private string irTopic = "/camera/camera/infra1/image_rect_raw";
+    [SerializeField] private string colorTopic = "/camera/camera/color/image_raw";
+    [SerializeField] private bool useCompressedTopics = false; // Set to true if using compressed
     
     [Header("UI Document")]
     [SerializeField] private UIDocument uiDocument;
     
     [Header("Performance Settings")]
-    [SerializeField] private bool skipFrames = false; // Enable if still laggy
-    [SerializeField] private int frameSkipCount = 1; // Process every Nth frame
+    [SerializeField] private bool skipFrames = false;
+    [SerializeField] private int frameSkipCount = 1;
     
-    // UI Elements
+    // UI Elements - Tabs
+    private Button sensorsTabBtn;
+    private Button flightTabBtn;
+    private VisualElement sensorsTab;
+    private VisualElement flightTab;
+    
+    // UI Elements - Sensor Feeds
     private VisualElement depthFeedDisplay;
     private VisualElement irFeedDisplay;
     private VisualElement colorFeedDisplay;
+    private VisualElement lidarFeedDisplay;
+    
+    // UI Elements - Status Labels
     private Label depthStatus;
     private Label irStatus;
     private Label colorStatus;
+    private Label lidarStatus;
     private Label sensorsOnlineCount;
     private Label sensorFps;
+    private Label statusIndicator;
     
+    // UI Elements - Buttons
     private Button depthConnectBtn;
     private Button irConnectBtn;
     private Button colorConnectBtn;
+    private Button lidarConnectBtn;
+    private Button connectAllBtn;
+    private Button disconnectAllBtn;
     
-    // Textures for displaying camera feeds
+    // Connection states
+    private bool depthConnected = true;
+    private bool irConnected = true;
+    private bool colorConnected = true;
+    private bool lidarConnected = false; // LiDAR not implemented yet
+    
+    // Textures for camera feeds
     private Texture2D depthTexture;
     private Texture2D irTexture;
     private Texture2D colorTexture;
-    
-    // Connection states
-    private bool depthConnected = false;
-    private bool irConnected = false;
-    private bool colorConnected = false;
     
     // FPS calculation
     private float lastFrameTime;
     private int frameCount;
     private float fps = 0f;
     
-    // Frame skipping
+    // Frame skipping counters
     private int depthFrameCounter = 0;
     private int irFrameCounter = 0;
     private int colorFrameCounter = 0;
@@ -75,7 +92,9 @@ public class RealSenseFeedReceiver : MonoBehaviour
         // Subscribe to ROS topics
         SubscribeToTopics();
         
-        Debug.Log("RealSense Feed Receiver initialized - OPTIMIZED MODE");
+        lastFrameTime = Time.time;
+        
+        Debug.Log("DroneEngine Controller initialized - All systems operational");
     }
     
     void InitializeUI()
@@ -83,85 +102,116 @@ public class RealSenseFeedReceiver : MonoBehaviour
         if (uiDocument == null)
         {
             uiDocument = GetComponent<UIDocument>();
+            if (uiDocument == null)
+            {
+                Debug.LogError("UIDocument not found!");
+                return;
+            }
         }
         
         var root = uiDocument.rootVisualElement;
+        Debug.Log($"UI Root found: {root != null}");
         
-        // Get display elements
+        // Get Tab Elements
+        sensorsTabBtn = root.Q<Button>("sensors-tab-btn");
+        flightTabBtn = root.Q<Button>("flight-tab-btn");
+        sensorsTab = root.Q<VisualElement>("sensors-tab");
+        flightTab = root.Q<VisualElement>("flight-tab");
+        
+        Debug.Log($"Tabs found - Sensors: {sensorsTabBtn != null}, Flight: {flightTabBtn != null}");
+        Debug.Log($"Tab panels - Sensors: {sensorsTab != null}, Flight: {flightTab != null}");
+        
+        // Get Feed Displays
         depthFeedDisplay = root.Q<VisualElement>("depth-feed-display");
         irFeedDisplay = root.Q<VisualElement>("ir-feed-display");
         colorFeedDisplay = root.Q<VisualElement>("color-feed-display");
+        lidarFeedDisplay = root.Q<VisualElement>("lidar-feed-display");
         
-        // Get status labels
+        Debug.Log($"Displays found - Depth: {depthFeedDisplay != null}, IR: {irFeedDisplay != null}, Color: {colorFeedDisplay != null}, Lidar: {lidarFeedDisplay != null}");
+        
+        // Get Status Elements
         depthStatus = root.Q<Label>("depth-status");
         irStatus = root.Q<Label>("ir-status");
         colorStatus = root.Q<Label>("color-status");
+        lidarStatus = root.Q<Label>("lidar-status");
         sensorsOnlineCount = root.Q<Label>("sensors-online-count");
         sensorFps = root.Q<Label>("sensor-fps");
+        statusIndicator = root.Q<Label>("status-indicator");
         
-        // Get buttons
+        // Get Buttons
         depthConnectBtn = root.Q<Button>("depth-connect-btn");
         irConnectBtn = root.Q<Button>("ir-connect-btn");
         colorConnectBtn = root.Q<Button>("color-connect-btn");
+        lidarConnectBtn = root.Q<Button>("lidar-connect-btn");
+        connectAllBtn = root.Q<Button>("connect-all-btn");
+        disconnectAllBtn = root.Q<Button>("disconnect-all-btn");
         
-        // Connect all/disconnect all buttons
-        var connectAllBtn = root.Q<Button>("connect-all-btn");
-        var disconnectAllBtn = root.Q<Button>("disconnect-all-btn");
+        // Setup Tab Switching
+        sensorsTabBtn?.RegisterCallback<ClickEvent>(evt => SwitchTab(true));
+        flightTabBtn?.RegisterCallback<ClickEvent>(evt => SwitchTab(false));
         
-        // Setup button callbacks
+        // Setup Individual Connect Buttons
         depthConnectBtn?.RegisterCallback<ClickEvent>(evt => ToggleDepthConnection());
         irConnectBtn?.RegisterCallback<ClickEvent>(evt => ToggleIRConnection());
         colorConnectBtn?.RegisterCallback<ClickEvent>(evt => ToggleColorConnection());
+        lidarConnectBtn?.RegisterCallback<ClickEvent>(evt => ToggleLidarConnection());
+        
+        // Setup Connect/Disconnect All
         connectAllBtn?.RegisterCallback<ClickEvent>(evt => ConnectAll());
         disconnectAllBtn?.RegisterCallback<ClickEvent>(evt => DisconnectAll());
         
-        // Initialize textures with filtering for better performance
+        // Initialize textures with bilinear filtering
         depthTexture = new Texture2D(640, 480, TextureFormat.RGB24, false);
         depthTexture.filterMode = FilterMode.Bilinear;
         
         irTexture = new Texture2D(640, 480, TextureFormat.RGB24, false);
         irTexture.filterMode = FilterMode.Bilinear;
         
-        colorTexture = new Texture2D(640, 480, TextureFormat.RGB24, false);
+        colorTexture = new Texture2D(1920, 1080, TextureFormat.RGB24, false);
         colorTexture.filterMode = FilterMode.Bilinear;
         
-        // Set initial connection state to true
-        depthConnected = true;
-        irConnected = true;
-        colorConnected = true;
+        // Update initial UI state
         UpdateConnectionUI();
-        
-        lastFrameTime = Time.time;
     }
     
     void SubscribeToTopics()
     {
-        // Subscribe to compressed image topics
         ros.Subscribe<CompressedImageMsg>(depthTopic, OnDepthImageReceived);
         ros.Subscribe<CompressedImageMsg>(irTopic, OnIRImageReceived);
         ros.Subscribe<CompressedImageMsg>(colorTopic, OnColorImageReceived);
+        
+        Debug.Log($"Subscribed to topics:\n- {depthTopic}\n- {irTopic}\n- {colorTopic}");
     }
+    
+    #region ROS Callbacks
     
     void OnDepthImageReceived(CompressedImageMsg msg)
     {
+        Debug.Log($"Depth image received - Size: {msg.data.Length} bytes, Connected: {depthConnected}");
+        
         if (!depthConnected) return;
         
-        // Frame skipping if enabled
         if (skipFrames)
         {
             depthFrameCounter++;
             if (depthFrameCounter % frameSkipCount != 0) return;
         }
         
-        // Queue the data for processing in Update()
-        if (depthQueue.Count < 2) // Limit queue size
+        if (depthQueue.Count < 2)
         {
             depthQueue.Enqueue(msg.data);
+            Debug.Log($"Depth image queued - Queue size: {depthQueue.Count}");
+        }
+        else
+        {
+            Debug.LogWarning("Depth queue full, skipping frame");
         }
     }
     
     void OnIRImageReceived(CompressedImageMsg msg)
     {
+        Debug.Log($"IR image received - Size: {msg.data.Length} bytes, Connected: {irConnected}");
+        
         if (!irConnected) return;
         
         if (skipFrames)
@@ -178,6 +228,8 @@ public class RealSenseFeedReceiver : MonoBehaviour
     
     void OnColorImageReceived(CompressedImageMsg msg)
     {
+        Debug.Log($"Color image received - Size: {msg.data.Length} bytes, Connected: {colorConnected}");
+        
         if (!colorConnected) return;
         
         if (skipFrames)
@@ -191,6 +243,8 @@ public class RealSenseFeedReceiver : MonoBehaviour
             colorQueue.Enqueue(msg.data);
         }
     }
+    
+    #endregion
     
     void Update()
     {
@@ -206,39 +260,53 @@ public class RealSenseFeedReceiver : MonoBehaviour
     {
         if (queue.TryDequeue(out byte[] imageData))
         {
+            Debug.Log($"Processing image - Data size: {imageData.Length}, Display null: {display == null}, Texture null: {texture == null}");
+            
             try
             {
-                // Load image data into texture
-                texture.LoadImage(imageData);
+                bool loaded = texture.LoadImage(imageData);
+                Debug.Log($"Texture LoadImage result: {loaded}");
                 
-                // Only apply if display is visible
-                if (display != null && display.style.backgroundImage.value == null || 
-                    display.style.backgroundImage.value.texture != texture)
+                if (loaded)
                 {
                     UpdateFeedDisplay(display, texture);
+                    Debug.Log("Feed display updated successfully");
                 }
             }
             catch (Exception e)
             {
-                Debug.LogError($"Error processing image: {e.Message}");
+                Debug.LogError($"Error processing image: {e.Message}\n{e.StackTrace}");
             }
         }
     }
     
     void UpdateFeedDisplay(VisualElement display, Texture2D texture)
     {
-        if (display != null && texture != null)
+        if (display == null)
         {
-            // Clear placeholder text only once
-            if (display.childCount > 0)
-            {
-                display.Clear();
-            }
-            
-            // Set background image
-            display.style.backgroundImage = new StyleBackground(texture);
-            display.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+            Debug.LogError("Display element is null!");
+            return;
         }
+        
+        if (texture == null)
+        {
+            Debug.LogError("Texture is null!");
+            return;
+        }
+        
+        Debug.Log($"Updating display - Texture size: {texture.width}x{texture.height}, Display children: {display.childCount}");
+        
+        // Clear placeholder text on first image
+        if (display.childCount > 0)
+        {
+            display.Clear();
+            Debug.Log("Cleared placeholder text");
+        }
+        
+        display.style.backgroundImage = new StyleBackground(texture);
+        display.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+        
+        Debug.Log("Background image set successfully");
     }
     
     void UpdateFPS()
@@ -246,7 +314,7 @@ public class RealSenseFeedReceiver : MonoBehaviour
         frameCount++;
         float currentTime = Time.time;
         
-        if (currentTime - lastFrameTime >= 0.5f) // Update twice per second
+        if (currentTime - lastFrameTime >= 0.5f)
         {
             fps = frameCount / (currentTime - lastFrameTime);
             frameCount = 0;
@@ -255,9 +323,55 @@ public class RealSenseFeedReceiver : MonoBehaviour
             if (sensorFps != null)
             {
                 sensorFps.text = $"{fps:F0} FPS";
+                
+                // Color code FPS
+                if (fps >= 25)
+                    sensorFps.style.color = new Color(0.39f, 0.71f, 1f);
+                else if (fps >= 15)
+                    sensorFps.style.color = new Color(1f, 0.78f, 0.39f);
+                else
+                    sensorFps.style.color = new Color(1f, 0.39f, 0.39f);
             }
         }
     }
+    
+    #region Tab Switching
+    
+    void SwitchTab(bool showSensors)
+    {
+        if (showSensors)
+        {
+            sensorsTab.style.display = DisplayStyle.Flex;
+            flightTab.style.display = DisplayStyle.None;
+            
+            SetButtonStyle(sensorsTabBtn, new Color(0.39f, 0.71f, 1f, 0.2f), new Color(0.39f, 0.71f, 1f, 1f));
+            SetButtonStyle(flightTabBtn, new Color(0.2f, 0.22f, 0.27f, 0.6f), new Color(1f, 1f, 1f, 0.15f));
+        }
+        else
+        {
+            sensorsTab.style.display = DisplayStyle.None;
+            flightTab.style.display = DisplayStyle.Flex;
+            
+            SetButtonStyle(flightTabBtn, new Color(0.39f, 0.71f, 1f, 0.2f), new Color(0.39f, 0.71f, 1f, 1f));
+            SetButtonStyle(sensorsTabBtn, new Color(0.2f, 0.22f, 0.27f, 0.6f), new Color(1f, 1f, 1f, 0.15f));
+        }
+    }
+    
+    void SetButtonStyle(Button btn, Color bgColor, Color borderColor)
+    {
+        if (btn == null) return;
+        
+        btn.style.backgroundColor = bgColor;
+        btn.style.borderTopColor = borderColor;
+        btn.style.borderBottomColor = borderColor;
+        btn.style.borderLeftColor = borderColor;
+        btn.style.borderRightColor = borderColor;
+        btn.style.color = borderColor;
+    }
+    
+    #endregion
+    
+    #region Connection Toggle
     
     void ToggleDepthConnection()
     {
@@ -266,7 +380,8 @@ public class RealSenseFeedReceiver : MonoBehaviour
         {
             depthFeedDisplay?.Clear();
             depthFeedDisplay.style.backgroundImage = null;
-            depthQueue = new ConcurrentQueue<byte[]>(); // Clear queue
+            depthQueue = new ConcurrentQueue<byte[]>();
+            RestorePlaceholder(depthFeedDisplay, "DEPTH CAMERA", "640 × 480");
         }
         UpdateConnectionUI();
     }
@@ -279,6 +394,7 @@ public class RealSenseFeedReceiver : MonoBehaviour
             irFeedDisplay?.Clear();
             irFeedDisplay.style.backgroundImage = null;
             irQueue = new ConcurrentQueue<byte[]>();
+            RestorePlaceholder(irFeedDisplay, "INFRARED", "640 × 480");
         }
         UpdateConnectionUI();
     }
@@ -291,8 +407,16 @@ public class RealSenseFeedReceiver : MonoBehaviour
             colorFeedDisplay?.Clear();
             colorFeedDisplay.style.backgroundImage = null;
             colorQueue = new ConcurrentQueue<byte[]>();
+            RestorePlaceholder(colorFeedDisplay, "RGB CAMERA", "1920 × 1080");
         }
         UpdateConnectionUI();
+    }
+    
+    void ToggleLidarConnection()
+    {
+        lidarConnected = !lidarConnected;
+        UpdateConnectionUI();
+        Debug.Log("LiDAR toggle - not yet implemented");
     }
     
     void ConnectAll()
@@ -300,6 +424,7 @@ public class RealSenseFeedReceiver : MonoBehaviour
         depthConnected = true;
         irConnected = true;
         colorConnected = true;
+        lidarConnected = true;
         UpdateConnectionUI();
     }
     
@@ -308,7 +433,9 @@ public class RealSenseFeedReceiver : MonoBehaviour
         depthConnected = false;
         irConnected = false;
         colorConnected = false;
+        lidarConnected = false;
         
+        // Clear displays
         depthFeedDisplay?.Clear();
         irFeedDisplay?.Clear();
         colorFeedDisplay?.Clear();
@@ -317,7 +444,12 @@ public class RealSenseFeedReceiver : MonoBehaviour
         irFeedDisplay.style.backgroundImage = null;
         colorFeedDisplay.style.backgroundImage = null;
         
-        // Clear all queues
+        // Restore placeholders
+        RestorePlaceholder(depthFeedDisplay, "DEPTH CAMERA", "640 × 480");
+        RestorePlaceholder(irFeedDisplay, "INFRARED", "640 × 480");
+        RestorePlaceholder(colorFeedDisplay, "RGB CAMERA", "1920 × 1080");
+        
+        // Clear queues
         depthQueue = new ConcurrentQueue<byte[]>();
         irQueue = new ConcurrentQueue<byte[]>();
         colorQueue = new ConcurrentQueue<byte[]>();
@@ -325,31 +457,64 @@ public class RealSenseFeedReceiver : MonoBehaviour
         UpdateConnectionUI();
     }
     
+    void RestorePlaceholder(VisualElement display, string mainText, string subText)
+    {
+        if (display == null) return;
+        
+        var mainLabel = new Label(mainText);
+        mainLabel.style.color = new Color(0.39f, 0.71f, 1f, 0.4f);
+        mainLabel.style.fontSize = 14;
+        mainLabel.style.letterSpacing = 2;
+        mainLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+        
+        var subLabel = new Label(subText);
+        subLabel.style.color = new Color(0.39f, 0.71f, 1f, 0.3f);
+        subLabel.style.fontSize = 10;
+        subLabel.style.marginTop = 8;
+        
+        display.Add(mainLabel);
+        display.Add(subLabel);
+    }
+    
+    #endregion
+    
+    #region UI Updates
+    
     void UpdateConnectionUI()
     {
         // Update status indicators
         UpdateStatusLabel(depthStatus, depthConnected);
         UpdateStatusLabel(irStatus, irConnected);
         UpdateStatusLabel(colorStatus, colorConnected);
+        UpdateStatusLabel(lidarStatus, lidarConnected);
         
-        // Update button text
-        if (depthConnectBtn != null)
-            depthConnectBtn.text = depthConnected ? "DISCONNECT" : "CONNECT";
-        if (irConnectBtn != null)
-            irConnectBtn.text = irConnected ? "DISCONNECT" : "CONNECT";
-        if (colorConnectBtn != null)
-            colorConnectBtn.text = colorConnected ? "DISCONNECT" : "CONNECT";
-        
-        // Update button colors
-        UpdateButtonStyle(depthConnectBtn, depthConnected);
-        UpdateButtonStyle(irConnectBtn, irConnected);
-        UpdateButtonStyle(colorConnectBtn, colorConnected);
+        // Update button text and styles
+        UpdateButtonConnection(depthConnectBtn, depthConnected);
+        UpdateButtonConnection(irConnectBtn, irConnected);
+        UpdateButtonConnection(colorConnectBtn, colorConnected);
+        UpdateButtonConnection(lidarConnectBtn, lidarConnected);
         
         // Update sensor count
-        int connectedCount = (depthConnected ? 1 : 0) + (irConnected ? 1 : 0) + (colorConnected ? 1 : 0);
+        int connectedCount = (depthConnected ? 1 : 0) + (irConnected ? 1 : 0) + 
+                           (colorConnected ? 1 : 0) + (lidarConnected ? 1 : 0);
+        
         if (sensorsOnlineCount != null)
         {
-            sensorsOnlineCount.text = $"{connectedCount}/3";
+            sensorsOnlineCount.text = $"{connectedCount}/4";
+            
+            if (connectedCount == 4)
+                sensorsOnlineCount.style.color = new Color(0f, 1f, 0.5f);
+            else if (connectedCount > 0)
+                sensorsOnlineCount.style.color = new Color(1f, 0.78f, 0.39f);
+            else
+                sensorsOnlineCount.style.color = new Color(1f, 0.39f, 0.39f);
+        }
+        
+        // Update main status indicator
+        if (statusIndicator != null)
+        {
+            statusIndicator.style.color = connectedCount > 0 ? 
+                new Color(0f, 1f, 0.5f) : new Color(1f, 0.39f, 0.39f);
         }
     }
     
@@ -359,24 +524,26 @@ public class RealSenseFeedReceiver : MonoBehaviour
         {
             label.text = connected ? "● CONNECTED" : "● DISCONNECTED";
             label.style.color = connected ? 
-                new Color(0, 1, 0.5f) : 
-                new Color(1, 0.4f, 0.4f);
+                new Color(0f, 1f, 0.5f) : 
+                new Color(1f, 0.39f, 0.39f);
         }
     }
     
-    void UpdateButtonStyle(Button button, bool connected)
+    void UpdateButtonConnection(Button button, bool connected)
     {
         if (button == null) return;
+        
+        button.text = connected ? "DISCONNECT" : "CONNECT";
         
         if (connected)
         {
             // Disconnect style (red)
-            button.style.backgroundColor = new Color(1f, 0.4f, 0.4f, 0.15f);
-            button.style.borderTopColor = new Color(1f, 0.4f, 0.4f);
-            button.style.borderBottomColor = new Color(1f, 0.4f, 0.4f);
-            button.style.borderLeftColor = new Color(1f, 0.4f, 0.4f);
-            button.style.borderRightColor = new Color(1f, 0.4f, 0.4f);
-            button.style.color = new Color(1f, 0.4f, 0.4f);
+            button.style.backgroundColor = new Color(1f, 0.39f, 0.39f, 0.15f);
+            button.style.borderTopColor = new Color(1f, 0.39f, 0.39f);
+            button.style.borderBottomColor = new Color(1f, 0.39f, 0.39f);
+            button.style.borderLeftColor = new Color(1f, 0.39f, 0.39f);
+            button.style.borderRightColor = new Color(1f, 0.39f, 0.39f);
+            button.style.color = new Color(1f, 0.39f, 0.39f);
         }
         else
         {
@@ -389,6 +556,8 @@ public class RealSenseFeedReceiver : MonoBehaviour
             button.style.color = new Color(0f, 1f, 0.5f);
         }
     }
+    
+    #endregion
     
     void OnDestroy()
     {
