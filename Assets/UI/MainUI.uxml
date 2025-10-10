@@ -1,157 +1,178 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
-    <ui:VisualElement name="root" style="flex-grow: 1; background-color: rgb(10, 12, 16);">
-        <ui:VisualElement name="top-bar" style="flex-direction: row; justify-content: space-between; padding: 16px; background-color: rgba(20, 24, 32, 0.9); border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.1);">
-            <ui:Label text="DroneEngine&#10;" style="-unity-font-style: bold; font-size: 24px; color: rgb(200, 210, 220); letter-spacing: 2px; width: 146px;" />
-            <ui:VisualElement style="flex-direction: row; align-items: center;">
-                <ui:Button name="sensors-tab-btn" text="SENSORS" style="height: 32px; width: 120px; margin-right: 8px; background-color: rgba(100, 180, 255, 0.2); border-radius: 4px; border-width: 1px; border-color: rgb(100, 180, 255); color: rgb(100, 180, 255); font-size: 11px; -unity-font-style: bold; letter-spacing: 1px;" />
-                <ui:Button name="flight-tab-btn" text="FLIGHT" style="height: 32px; width: 120px; margin-right: 24px; background-color: rgba(50, 55, 70, 0.6); border-radius: 4px; border-width: 1px; border-color: rgba(255, 255, 255, 0.15); color: rgb(200, 210, 220); font-size: 11px; -unity-font-style: bold; letter-spacing: 1px;" />
-                <ui:Label name="status-indicator" text="●" style="color: rgb(0, 255, 128); font-size: 20px; margin-right: 8px;" />
-                <ui:Label text="OPERATIONAL" style="color: rgb(200, 210, 220); font-size: 12px;" />
+    <Style src="project://database/Assets/UI/DroneEngine.uss?fileID=7433441132597879392&amp;guid=f24c162cb27da4eddb65203dd915e4ea&amp;type=3#DroneEngine" />
+    <ui:VisualElement name="root">
+        <ui:VisualElement name="top-bar">
+            <ui:Label text="DroneEngine&#10;" class="top-bar-title" />
+            <ui:VisualElement class="top-bar-controls">
+                <ui:Button name="sensors-tab-btn" text="SENSORS" />
+                <ui:Button name="flight-tab-btn" text="FLIGHT" />
+                <ui:Label name="status-indicator" text="●" />
+                <ui:Label text="OPERATIONAL" class="status-text" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="sensors-tab" style="flex-grow: 1; padding: 24px; display: flex;">
-            <ui:Label text="SENSOR ARRAY" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 24px; letter-spacing: 1px;" />
-            <ui:VisualElement name="sensor-grid" style="flex-direction: row; flex-grow: 1; margin-bottom: 24px;">
-                <ui:VisualElement name="depth-feed" style="flex-grow: 1; margin-right: 16px; flex-direction: column;">
-                    <ui:VisualElement style="background-color: rgba(30, 35, 45, 0.6); border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08); padding: 16px; flex-grow: 1; flex-direction: column;">
-                        <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <ui:Label text="REALSENSE D455 DEPTH" style="color: rgba(255, 255, 255, 0.7); font-size: 11px; letter-spacing: 1px; -unity-font-style: bold;" />
-                            <ui:Label name="depth-status" text="● CONNECTED" style="color: rgb(0, 255, 128); font-size: 10px;" />
+        
+        <ui:VisualElement name="sensors-tab">
+            <ui:Label text="SENSOR ARRAY" class="section-label" />
+            <ui:VisualElement name="sensor-grid">
+                <!-- Depth Camera -->
+                <ui:VisualElement name="depth-feed">
+                    <ui:VisualElement class="sensor-card">
+                        <ui:VisualElement class="sensor-header">
+                            <ui:Label text="REALSENSE D455 DEPTH" class="sensor-title" />
+                            <ui:Label name="depth-status" text="● CONNECTED" />
                         </ui:VisualElement>
-                        <ui:VisualElement name="depth-feed-display" style="flex-grow: 1; background-color: rgba(15, 18, 25, 0.8); border-radius: 6px; border-width: 2px; border-color: rgba(100, 180, 255, 0.3); justify-content: center; align-items: center; margin-bottom: 12px; min-height: 300px;">
-                            <ui:Label text="DEPTH CAMERA" style="color: rgba(100, 180, 255, 0.4); font-size: 14px; letter-spacing: 2px; -unity-font-style: bold;" />
-                            <ui:Label text="640 × 480" style="color: rgba(100, 180, 255, 0.3); font-size: 10px; margin-top: 8px;" />
+                        <ui:VisualElement name="depth-feed-display">
+                            <ui:Label text="DEPTH CAMERA" />
+                            <ui:Label text="640 × 480" />
                         </ui:VisualElement>
-                        <ui:VisualElement style="flex-direction: row;">
-                            <ui:Button name="depth-connect-btn" text="DISCONNECT" style="flex-grow: 1; height: 40px; margin-right: 8px; background-color: rgba(255, 100, 100, 0.15); border-radius: 4px; border-width: 1px; border-color: rgb(255, 100, 100); color: rgb(255, 100, 100); font-size: 11px; -unity-font-style: bold; letter-spacing: 1px;" />
-                            <ui:Button name="depth-settings-btn" text="⚙" style="width: 40px; height: 40px; background-color: rgba(50, 55, 70, 0.6); border-radius: 4px; border-width: 1px; border-color: rgba(255, 255, 255, 0.15); color: rgb(200, 210, 220); font-size: 16px;" />
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                </ui:VisualElement>
-                <ui:VisualElement name="ir-feed" style="flex-grow: 1; margin-right: 16px; flex-direction: column;">
-                    <ui:VisualElement style="background-color: rgba(30, 35, 45, 0.6); border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08); padding: 16px; flex-grow: 1; flex-direction: column;">
-                        <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <ui:Label text="INFRARED CAMERA" style="color: rgba(255, 255, 255, 0.7); font-size: 11px; letter-spacing: 1px; -unity-font-style: bold;" />
-                            <ui:Label name="ir-status" text="● CONNECTED" style="color: rgb(0, 255, 128); font-size: 10px;" />
-                        </ui:VisualElement>
-                        <ui:VisualElement name="ir-feed-display" style="flex-grow: 1; background-color: rgba(15, 18, 25, 0.8); border-radius: 6px; border-width: 2px; border-color: rgba(255, 100, 100, 0.3); justify-content: center; align-items: center; margin-bottom: 12px; min-height: 300px;">
-                            <ui:Label text="INFRARED" style="color: rgba(255, 100, 100, 0.4); font-size: 14px; letter-spacing: 2px; -unity-font-style: bold;" />
-                            <ui:Label text="640 × 480" style="color: rgba(255, 100, 100, 0.3); font-size: 10px; margin-top: 8px;" />
-                        </ui:VisualElement>
-                        <ui:VisualElement style="flex-direction: row;">
-                            <ui:Button name="ir-connect-btn" text="DISCONNECT" style="flex-grow: 1; height: 40px; margin-right: 8px; background-color: rgba(255, 100, 100, 0.15); border-radius: 4px; border-width: 1px; border-color: rgb(255, 100, 100); color: rgb(255, 100, 100); font-size: 11px; -unity-font-style: bold; letter-spacing: 1px;" />
-                            <ui:Button name="ir-settings-btn" text="⚙" style="width: 40px; height: 40px; background-color: rgba(50, 55, 70, 0.6); border-radius: 4px; border-width: 1px; border-color: rgba(255, 255, 255, 0.15); color: rgb(200, 210, 220); font-size: 16px;" />
+                        <ui:VisualElement class="sensor-controls">
+                            <ui:Button name="depth-connect-btn" text="DISCONNECT" />
+                            <ui:Button name="depth-settings-btn" text="⚙" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:VisualElement name="color-feed" style="flex-grow: 1; margin-right: 16px; flex-direction: column;">
-                    <ui:VisualElement style="background-color: rgba(30, 35, 45, 0.6); border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08); padding: 16px; flex-grow: 1; flex-direction: column;">
-                        <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <ui:Label text="RGB COLOR CAMERA" style="color: rgba(255, 255, 255, 0.7); font-size: 11px; letter-spacing: 1px; -unity-font-style: bold;" />
-                            <ui:Label name="color-status" text="● CONNECTED" style="color: rgb(0, 255, 128); font-size: 10px;" />
+                
+                <!-- IR Camera -->
+                <ui:VisualElement name="ir-feed">
+                    <ui:VisualElement class="sensor-card">
+                        <ui:VisualElement class="sensor-header">
+                            <ui:Label text="INFRARED CAMERA" class="sensor-title" />
+                            <ui:Label name="ir-status" text="● CONNECTED" />
                         </ui:VisualElement>
-                        <ui:VisualElement name="color-feed-display" style="flex-grow: 1; background-color: rgba(15, 18, 25, 0.8); border-radius: 6px; border-width: 2px; border-color: rgba(100, 255, 180, 0.3); justify-content: center; align-items: center; margin-bottom: 12px; min-height: 300px;">
-                            <ui:Label text="RGB CAMERA" style="color: rgba(100, 255, 180, 0.4); font-size: 14px; letter-spacing: 2px; -unity-font-style: bold;" />
-                            <ui:Label text="1920 × 1080" style="color: rgba(100, 255, 180, 0.3); font-size: 10px; margin-top: 8px;" />
+                        <ui:VisualElement name="ir-feed-display">
+                            <ui:Label text="INFRARED" />
+                            <ui:Label text="640 × 480" />
                         </ui:VisualElement>
-                        <ui:VisualElement style="flex-direction: row;">
-                            <ui:Button name="color-connect-btn" text="DISCONNECT" style="flex-grow: 1; height: 40px; margin-right: 8px; background-color: rgba(255, 100, 100, 0.15); border-radius: 4px; border-width: 1px; border-color: rgb(255, 100, 100); color: rgb(255, 100, 100); font-size: 11px; -unity-font-style: bold; letter-spacing: 1px;" />
-                            <ui:Button name="color-settings-btn" text="⚙" style="width: 40px; height: 40px; background-color: rgba(50, 55, 70, 0.6); border-radius: 4px; border-width: 1px; border-color: rgba(255, 255, 255, 0.15); color: rgb(200, 210, 220); font-size: 16px;" />
+                        <ui:VisualElement class="sensor-controls">
+                            <ui:Button name="ir-connect-btn" text="DISCONNECT" />
+                            <ui:Button name="ir-settings-btn" text="⚙" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:VisualElement name="lidar-feed" style="flex-grow: 1; flex-direction: column;">
-                    <ui:VisualElement style="background-color: rgba(30, 35, 45, 0.6); border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08); padding: 16px; flex-grow: 1; flex-direction: column;">
-                        <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <ui:Label text="LIDAR SCANNER" style="color: rgba(255, 255, 255, 0.7); font-size: 11px; letter-spacing: 1px; -unity-font-style: bold;" />
-                            <ui:Label name="lidar-status" text="● CONNECTED" style="color: rgb(0, 255, 128); font-size: 10px;" />
+                
+                <!-- Color Camera -->
+                <ui:VisualElement name="color-feed">
+                    <ui:VisualElement class="sensor-card">
+                        <ui:VisualElement class="sensor-header">
+                            <ui:Label text="RGB COLOR CAMERA" class="sensor-title" />
+                            <ui:Label name="color-status" text="● CONNECTED" />
                         </ui:VisualElement>
-                        <ui:VisualElement name="lidar-feed-display" style="flex-grow: 1; background-color: rgba(15, 18, 25, 0.8); border-radius: 6px; border-width: 2px; border-color: rgba(255, 200, 100, 0.3); justify-content: center; align-items: center; margin-bottom: 12px; min-height: 300px;">
-                            <ui:Label text="LIDAR SCAN" style="color: rgba(255, 200, 100, 0.4); font-size: 14px; letter-spacing: 2px; -unity-font-style: bold;" />
-                            <ui:Label text="360° SWEEP" style="color: rgba(255, 200, 100, 0.3); font-size: 10px; margin-top: 8px;" />
+                        <ui:VisualElement name="color-feed-display">
+                            <ui:Label text="RGB CAMERA" />
+                            <ui:Label text="1920 × 1080" />
                         </ui:VisualElement>
-                        <ui:VisualElement style="flex-direction: row;">
-                            <ui:Button name="lidar-connect-btn" text="DISCONNECT" style="flex-grow: 1; height: 40px; margin-right: 8px; background-color: rgba(255, 100, 100, 0.15); border-radius: 4px; border-width: 1px; border-color: rgb(255, 100, 100); color: rgb(255, 100, 100); font-size: 11px; -unity-font-style: bold; letter-spacing: 1px;" />
-                            <ui:Button name="lidar-settings-btn" text="⚙" style="width: 40px; height: 40px; background-color: rgba(50, 55, 70, 0.6); border-radius: 4px; border-width: 1px; border-color: rgba(255, 255, 255, 0.15); color: rgb(200, 210, 220); font-size: 16px;" />
+                        <ui:VisualElement class="sensor-controls">
+                            <ui:Button name="color-connect-btn" text="DISCONNECT" />
+                            <ui:Button name="color-settings-btn" text="⚙" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                
+                <!-- LIDAR Scanner -->
+                <ui:VisualElement name="lidar-feed">
+                    <ui:VisualElement class="sensor-card">
+                        <ui:VisualElement class="sensor-header">
+                            <ui:Label text="LIDAR SCANNER" class="sensor-title" />
+                            <ui:Label name="lidar-status" text="● CONNECTED" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="lidar-feed-display">
+                            <ui:Label text="LIDAR SCAN" />
+                            <ui:Label text="360° SWEEP" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="sensor-controls">
+                            <ui:Button name="lidar-connect-btn" text="DISCONNECT" />
+                            <ui:Button name="lidar-settings-btn" text="⚙" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement style="background-color: rgba(30, 35, 45, 0.6); border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08); padding: 16px; flex-direction: row; justify-content: space-between;">
-                <ui:VisualElement style="flex-direction: row; align-items: center;">
-                    <ui:Label text="SENSORS ONLINE:" style="color: rgba(255, 255, 255, 0.5); font-size: 11px; margin-right: 12px;" />
-                    <ui:Label name="sensors-online-count" text="4/4" style="color: rgb(0, 255, 128); font-size: 16px; -unity-font-style: bold; margin-right: 24px;" />
-                    <ui:Label text="FRAME RATE:" style="color: rgba(255, 255, 255, 0.5); font-size: 11px; margin-right: 12px;" />
-                    <ui:Label name="sensor-fps" text="30 FPS" style="color: rgb(100, 180, 255); font-size: 16px; -unity-font-style: bold;" />
+            
+            <!-- Sensor Status Bar -->
+            <ui:VisualElement class="status-bar-container">
+                <ui:VisualElement class="status-info">
+                    <ui:Label text="SENSORS ONLINE:" class="section-label" />
+                    <ui:Label name="sensors-online-count" text="4/4" />
+                    <ui:Label text="FRAME RATE:" class="section-label" />
+                    <ui:Label name="sensor-fps" text="30 FPS" />
                 </ui:VisualElement>
-                <ui:VisualElement style="flex-direction: row;">
-                    <ui:Button name="connect-all-btn" text="CONNECT ALL" style="height: 40px; width: 140px; margin-right: 8px; background-color: rgba(0, 255, 128, 0.15); border-radius: 4px; border-width: 1px; border-color: rgb(0, 255, 128); color: rgb(0, 255, 128); font-size: 11px; -unity-font-style: bold; letter-spacing: 1px;" />
-                    <ui:Button name="disconnect-all-btn" text="DISCONNECT ALL" style="height: 40px; width: 140px; background-color: rgba(255, 100, 100, 0.15); border-radius: 4px; border-width: 1px; border-color: rgb(255, 100, 100); color: rgb(255, 100, 100); font-size: 11px; -unity-font-style: bold; letter-spacing: 1px;" />
+                <ui:VisualElement class="status-buttons">
+                    <ui:Button name="connect-all-btn" text="CONNECT ALL" />
+                    <ui:Button name="disconnect-all-btn" text="DISCONNECT ALL" />
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="flight-tab" style="flex-grow: 1; flex-direction: row; padding: 24px; display: none;">
-            <ui:VisualElement name="left-panel" style="width: 280px; margin-right: 24px;">
-                <ui:Label text="TELEMETRY" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 16px; letter-spacing: 1px;" />
-                <ui:VisualElement name="data-card" style="background-color: rgba(30, 35, 45, 0.6); padding: 16px; border-radius: 8px; margin-bottom: 16px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08);">
-                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 12px;">
-                        <ui:Label text="Altitude" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
-                        <ui:Label name="altitude-value" text="2,450 m" style="color: rgb(200, 210, 220); font-size: 16px; -unity-font-style: bold;" />
+        
+        <ui:VisualElement name="flight-tab">
+            <!-- Left Panel -->
+            <ui:VisualElement name="left-panel">
+                <ui:Label text="TELEMETRY" class="section-label" />
+                <ui:VisualElement name="data-card">
+                    <ui:VisualElement class="telemetry-row">
+                        <ui:Label text="Altitude" class="telemetry-label" />
+                        <ui:Label name="altitude-value" text="2,450 m" />
                     </ui:VisualElement>
-                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 12px;">
-                        <ui:Label text="Speed" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
-                        <ui:Label name="speed-value" text="320 km/h" style="color: rgb(200, 210, 220); font-size: 16px; -unity-font-style: bold;" />
+                    <ui:VisualElement class="telemetry-row">
+                        <ui:Label text="Speed" class="telemetry-label" />
+                        <ui:Label name="speed-value" text="320 km/h" />
                     </ui:VisualElement>
-                    <ui:VisualElement style="flex-direction: row; justify-content: space-between;">
-                        <ui:Label text="Heading" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
-                        <ui:Label name="heading-value" text="087°" style="color: rgb(200, 210, 220); font-size: 16px; -unity-font-style: bold;" />
+                    <ui:VisualElement class="telemetry-row">
+                        <ui:Label text="Heading" class="telemetry-label" />
+                        <ui:Label name="heading-value" text="087°" />
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:Label text="ATTITUDE" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 16px; letter-spacing: 1px;" />
-                <ui:VisualElement name="attitude-card" style="background-color: rgba(30, 35, 45, 0.6); padding: 16px; border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08);">
-                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 12px;">
-                        <ui:Label text="Pitch" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
-                        <ui:Label name="pitch-value" text="+5.2°" style="color: rgb(100, 180, 255); font-size: 14px;" />
+                
+                <ui:Label text="ATTITUDE" class="section-label" />
+                <ui:VisualElement name="attitude-card">
+                    <ui:VisualElement class="telemetry-row">
+                        <ui:Label text="Pitch" class="telemetry-label" />
+                        <ui:Label name="pitch-value" text="+5.2°" />
                     </ui:VisualElement>
-                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 12px;">
-                        <ui:Label text="Roll" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
-                        <ui:Label name="roll-value" text="-2.8°" style="color: rgb(100, 180, 255); font-size: 14px;" />
+                    <ui:VisualElement class="telemetry-row">
+                        <ui:Label text="Roll" class="telemetry-label" />
+                        <ui:Label name="roll-value" text="-2.8°" />
                     </ui:VisualElement>
-                    <ui:VisualElement style="flex-direction: row; justify-content: space-between;">
-                        <ui:Label text="Yaw" style="color: rgba(255, 255, 255, 0.6); font-size: 11px;" />
-                        <ui:Label name="yaw-value" text="0.0°" style="color: rgb(100, 180, 255); font-size: 14px;" />
+                    <ui:VisualElement class="telemetry-row">
+                        <ui:Label text="Yaw" class="telemetry-label" />
+                        <ui:Label name="yaw-value" text="0.0°" />
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement name="center-panel" style="flex-grow: 1; justify-content: center; align-items: center;">
-                <ui:VisualElement name="horizon-display" style="width: 400px; height: 400px; background-color: rgba(30, 35, 45, 0.4); border-radius: 200px; border-width: 2px; border-color: rgba(100, 180, 255, 0.3); justify-content: center; align-items: center;">
+            
+            <!-- Center Panel -->
+            <ui:VisualElement name="center-panel">
+                <ui:VisualElement name="horizon-display">
                     <ui:VisualElement style="width: 2px; height: 80px; background-color: rgba(255, 255, 255, 0.8);" />
                     <ui:VisualElement style="width: 80px; height: 2px; background-color: rgba(255, 255, 255, 0.8); position: absolute;" />
                     <ui:Label text="LEVEL" style="color: rgba(255, 255, 255, 0.4); font-size: 10px; margin-top: 60px; letter-spacing: 2px;" />
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement name="right-panel" style="width: 280px; margin-left: 24px;">
-                <ui:Label text="SYSTEMS" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 16px; letter-spacing: 1px;" />
-                <ui:Button name="autopilot-btn" text="AUTOPILOT" style="height: 48px; margin-bottom: 12px; background-color: rgba(0, 255, 128, 0.15); border-radius: 6px; border-width: 1px; border-color: rgb(0, 255, 128); color: rgb(0, 255, 128); font-size: 12px; -unity-font-style: bold; letter-spacing: 1px;" />
-                <ui:Button name="landing-gear-btn" text="LANDING GEAR" style="height: 48px; margin-bottom: 12px; background-color: rgba(50, 55, 70, 0.6); border-radius: 6px; border-width: 1px; border-color: rgba(255, 255, 255, 0.15); color: rgb(200, 210, 220); font-size: 12px; -unity-font-style: bold; letter-spacing: 1px;" />
-                <ui:Button name="flaps-btn" text="FLAPS" style="height: 48px; margin-bottom: 24px; background-color: rgba(50, 55, 70, 0.6); border-radius: 6px; border-width: 1px; border-color: rgba(255, 255, 255, 0.15); color: rgb(200, 210, 220); font-size: 12px; -unity-font-style: bold; letter-spacing: 1px;" />
-                <ui:Label text="THROTTLE" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 12px; letter-spacing: 1px;" />
-                <ui:VisualElement style="background-color: rgba(30, 35, 45, 0.6); padding: 16px; border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08);">
-                    <ui:Slider name="throttle-slider" high-value="100" low-value="0" value="65" show-input-field="false" style="margin-bottom: 8px;" />
-                    <ui:Label name="throttle-value" text="65%" style="color: rgb(200, 210, 220); font-size: 18px; -unity-font-style: bold; -unity-text-align: middle-center;" />
+            
+            <!-- Right Panel -->
+            <ui:VisualElement name="right-panel">
+                <ui:Label text="SYSTEMS" class="section-label" />
+                <ui:Button name="autopilot-btn" text="AUTOPILOT" />
+                <ui:Button name="landing-gear-btn" text="LANDING GEAR" />
+                <ui:Button name="flaps-btn" text="FLAPS" />
+                
+                <ui:Label text="THROTTLE" class="section-label" />
+                <ui:VisualElement class="throttle-container">
+                    <ui:Slider name="throttle-slider" high-value="100" low-value="0" value="65" show-input-field="false" />
+                    <ui:Label name="throttle-value" text="65%" />
                 </ui:VisualElement>
-                <ui:VisualElement style="margin-top: 24px;">
-                    <ui:Label text="WARNINGS" style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 12px; letter-spacing: 1px;" />
-                    <ui:VisualElement style="background-color: rgba(30, 35, 45, 0.6); padding: 12px; border-radius: 6px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08);">
+                
+                <ui:VisualElement class="warnings-container">
+                    <ui:Label text="WARNINGS" class="section-label" />
+                    <ui:VisualElement class="warnings-box">
                         <ui:Label text="All systems nominal" style="color: rgba(255, 255, 255, 0.5); font-size: 11px; -unity-text-align: middle-center;" />
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="bottom-bar" style="flex-direction: row; justify-content: space-between; padding: 12px 16px; background-color: rgba(20, 24, 32, 0.9); border-top-width: 1px; border-top-color: rgba(255, 255, 255, 0.1);">
-            <ui:Label name="time-label" text="UTC 14:23:45" style="color: rgba(255, 255, 255, 0.5); font-size: 11px;" />
-            <ui:Label name="coords-label" text="LAT 45.5231 | LON -122.6765" style="color: rgba(255, 255, 255, 0.5); font-size: 11px;" />
-            <ui:Label name="battery-label" text="BATTERY 72%" style="color: rgba(255, 255, 255, 0.5); font-size: 11px;" />
+        
+        <ui:VisualElement name="bottom-bar">
+            <ui:Label name="time-label" text="UTC 14:23:45" />
+            <ui:Label name="coords-label" text="LAT 45.5231 | LON -122.6765" />
+            <ui:Label name="battery-label" text="BATTERY 72%" />
         </ui:VisualElement>
     </ui:VisualElement>
-</ui:UXML>
+</ui:UXML>   

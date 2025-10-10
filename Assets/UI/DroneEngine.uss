@@ -1,0 +1,468 @@
+/* Root Container */
+#root {
+    flex-grow: 1;
+    background-color: rgb(10, 12, 16);
+}
+
+/* Top Bar */
+#top-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    background-color: rgba(20, 24, 32, 0.9);
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Tab Buttons */
+#sensors-tab-btn {
+    height: 32px;
+    width: 120px;
+    margin-right: 8px;
+    background-color: rgba(100, 180, 255, 0.2);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(100, 180, 255);
+    color: rgb(100, 180, 255);
+    font-size: 11px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+#flight-tab-btn {
+    height: 32px;
+    width: 120px;
+    margin-right: 24px;
+    background-color: rgba(50, 55, 70, 0.6);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgb(200, 210, 220);
+    font-size: 11px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+/* Status Indicator */
+#status-indicator {
+    color: rgb(0, 255, 128);
+    font-size: 20px;
+    margin-right: 8px;
+}
+
+/* Sensors Tab */
+#sensors-tab {
+    flex-grow: 1;
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-top: 24px;
+    padding-bottom: 24px;
+    display: flex;
+}
+
+/* Sensor Grid */
+#sensor-grid {
+    flex-direction: row;
+    flex-grow: 1;
+    margin-bottom: 24px;
+}
+
+#depth-feed,
+#ir-feed,
+#color-feed {
+    flex-grow: 1;
+    margin-right: 16px;
+    flex-direction: column;
+}
+
+#lidar-feed {
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+/* Status Labels */
+#depth-status,
+#ir-status,
+#color-status,
+#lidar-status {
+    color: rgb(0, 255, 128);
+    font-size: 10px;
+}
+
+/* Feed Displays */
+#depth-feed-display {
+    flex-grow: 1;
+    background-color: rgba(15, 18, 25, 0.8);
+    border-radius: 6px;
+    border-width: 2px;
+    border-color: rgba(100, 180, 255, 0.3);
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+    min-height: 300px;
+}
+
+#ir-feed-display {
+    flex-grow: 1;
+    background-color: rgba(15, 18, 25, 0.8);
+    border-radius: 6px;
+    border-width: 2px;
+    border-color: rgba(255, 100, 100, 0.3);
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+    min-height: 300px;
+}
+
+#color-feed-display {
+    flex-grow: 1;
+    background-color: rgba(15, 18, 25, 0.8);
+    border-radius: 6px;
+    border-width: 2px;
+    border-color: rgba(100, 255, 180, 0.3);
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+    min-height: 300px;
+}
+
+#lidar-feed-display {
+    flex-grow: 1;
+    background-color: rgba(15, 18, 25, 0.8);
+    border-radius: 6px;
+    border-width: 2px;
+    border-color: rgba(255, 200, 100, 0.3);
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+    min-height: 300px;
+}
+
+/* Sensor Control Buttons */
+#depth-connect-btn,
+#ir-connect-btn,
+#color-connect-btn,
+#lidar-connect-btn {
+    flex-grow: 1;
+    height: 40px;
+    margin-right: 8px;
+    background-color: rgba(255, 100, 100, 0.15);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(255, 100, 100);
+    color: rgb(255, 100, 100);
+    font-size: 11px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+#depth-settings-btn,
+#ir-settings-btn,
+#color-settings-btn,
+#lidar-settings-btn {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(50, 55, 70, 0.6);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgb(200, 210, 220);
+    font-size: 16px;
+}
+
+/* Sensor Status Counters */
+#sensors-online-count {
+    color: rgb(0, 255, 128);
+    font-size: 16px;
+    -unity-font-style: bold;
+    margin-right: 24px;
+}
+
+#sensor-fps {
+    color: rgb(100, 180, 255);
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+
+#connect-all-btn {
+    height: 40px;
+    width: 140px;
+    margin-right: 8px;
+    background-color: rgba(0, 255, 128, 0.15);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(0, 255, 128);
+    color: rgb(0, 255, 128);
+    font-size: 11px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+#disconnect-all-btn {
+    height: 40px;
+    width: 140px;
+    background-color: rgba(255, 100, 100, 0.15);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(255, 100, 100);
+    color: rgb(255, 100, 100);
+    font-size: 11px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+/* Flight Tab */
+#flight-tab {
+    flex-grow: 1;
+    flex-direction: row;
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-top: 24px;
+    padding-bottom: 24px;
+    display: none;
+}
+
+/* Flight Panels */
+#left-panel {
+    width: 280px;
+    margin-right: 24px;
+}
+
+#data-card {
+    background-color: rgba(30, 35, 45, 0.6);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+#altitude-value,
+#speed-value,
+#heading-value {
+    color: rgb(200, 210, 220);
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+
+#attitude-card {
+    background-color: rgba(30, 35, 45, 0.6);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+#pitch-value,
+#roll-value,
+#yaw-value {
+    color: rgb(100, 180, 255);
+    font-size: 14px;
+}
+
+/* Center Panel */
+#center-panel {
+    flex-grow: 1;
+    justify-content: center;
+    align-items: center;
+}
+
+#horizon-display {
+    width: 400px;
+    height: 400px;
+    background-color: rgba(30, 35, 45, 0.4);
+    border-radius: 200px;
+    border-width: 2px;
+    border-color: rgba(100, 180, 255, 0.3);
+    justify-content: center;
+    align-items: center;
+}
+
+/* Right Panel */
+#right-panel {
+    width: 280px;
+    margin-left: 24px;
+}
+
+#autopilot-btn {
+    height: 48px;
+    margin-bottom: 12px;
+    background-color: rgba(0, 255, 128, 0.15);
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: rgb(0, 255, 128);
+    color: rgb(0, 255, 128);
+    font-size: 12px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+#landing-gear-btn,
+#flaps-btn {
+    height: 48px;
+    margin-bottom: 12px;
+    background-color: rgba(50, 55, 70, 0.6);
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgb(200, 210, 220);
+    font-size: 12px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+#throttle-slider {
+    margin-bottom: 8px;
+}
+
+#throttle-value {
+    color: rgb(200, 210, 220);
+    font-size: 18px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+/* Bottom Bar */
+#bottom-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    background-color: rgba(20, 24, 32, 0.9);
+    border-top-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+#time-label,
+#coords-label,
+#battery-label {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+}
+
+/* USS Classes for reusable styles */
+.sensor-card {
+    background-color: rgba(30, 35, 45, 0.6);
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.sensor-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.sensor-title {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    letter-spacing: 1px;
+    -unity-font-style: bold;
+}
+
+.sensor-controls {
+    flex-direction: row;
+}
+
+.section-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+}
+
+.telemetry-row {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.telemetry-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 11px;
+}
+
+.status-bar-container {
+    background-color: rgba(30, 35, 45, 0.6);
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.throttle-container {
+    background-color: rgba(30, 35, 45, 0.6);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.warnings-container {
+    margin-top: 24px;
+}
+
+.warnings-box {
+    background-color: rgba(30, 35, 45, 0.6);
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.top-bar-title {
+    -unity-font-style: bold;
+    font-size: 24px;
+    color: rgb(200, 210, 220);
+    letter-spacing: 2px;
+    width: 146px;
+}
+
+.top-bar-controls {
+    flex-direction: row;
+    align-items: center;
+}
+
+.status-text {
+    color: rgb(200, 210, 220);
+    font-size: 12px;
+}
+
+.status-info {
+    flex-direction: row;
+    align-items: center;
+}
+
+.status-buttons {
+    flex-direction: row;
+}
