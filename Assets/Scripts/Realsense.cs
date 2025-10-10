@@ -15,7 +15,7 @@ public class DroneEngineController : MonoBehaviour
     [SerializeField] private string depthTopic = "/camera/camera/depth/image_rect_raw";
     [SerializeField] private string irTopic = "/camera/camera/infra1/image_rect_raw";
     [SerializeField] private string colorTopic = "/camera/camera/color/image_raw";
-    [SerializeField] private bool useCompressedTopics = false; // Set to true if using compressed
+    [SerializeField] private bool useCompressedTopics = false;
     
     [Header("UI Document")]
     [SerializeField] private UIDocument uiDocument;
@@ -57,7 +57,7 @@ public class DroneEngineController : MonoBehaviour
     private bool depthConnected = true;
     private bool irConnected = true;
     private bool colorConnected = true;
-    private bool lidarConnected = false; // LiDAR not implemented yet
+    private bool lidarConnected = false;
     
     // Textures for camera feeds
     private Texture2D depthTexture;
@@ -75,23 +75,25 @@ public class DroneEngineController : MonoBehaviour
     private int colorFrameCounter = 0;
     
     // Thread-safe queues for image data
-    private ConcurrentQueue<byte[]> depthQueue = new ConcurrentQueue<byte[]>();
-    private ConcurrentQueue<byte[]> irQueue = new ConcurrentQueue<byte[]>();
-    private ConcurrentQueue<byte[]> colorQueue = new ConcurrentQueue<byte[]>();
+    private ConcurrentQueue<ImageData> depthQueue = new ConcurrentQueue<ImageData>();
+    private ConcurrentQueue<ImageData> irQueue = new ConcurrentQueue<ImageData>();
+    private ConcurrentQueue<ImageData> colorQueue = new ConcurrentQueue<ImageData>();
     
     private ROSConnection ros;
     
+    private struct ImageData
+    {
+        public byte[] data;
+        public int width;
+        public int height;
+        public string encoding;
+    }
+    
     void Start()
     {
-        // Get ROS connection
         ros = ROSConnection.GetOrCreateInstance();
-        
-        // Initialize UI
         InitializeUI();
-        
-        // Subscribe to ROS topics
         SubscribeToTopics();
-        
         lastFrameTime = Time.time;
         
         Debug.Log("DroneEngine Controller initialized - All systems operational");
@@ -110,7 +112,6 @@ public class DroneEngineController : MonoBehaviour
         }
         
         var root = uiDocument.rootVisualElement;
-        Debug.Log($"UI Root found: {root != null}");
         
         // Get Tab Elements
         sensorsTabBtn = root.Q<Button>("sensors-tab-btn");
@@ -118,16 +119,11 @@ public class DroneEngineController : MonoBehaviour
         sensorsTab = root.Q<VisualElement>("sensors-tab");
         flightTab = root.Q<VisualElement>("flight-tab");
         
-        Debug.Log($"Tabs found - Sensors: {sensorsTabBtn != null}, Flight: {flightTabBtn != null}");
-        Debug.Log($"Tab panels - Sensors: {sensorsTab != null}, Flight: {flightTab != null}");
-        
         // Get Feed Displays
         depthFeedDisplay = root.Q<VisualElement>("depth-feed-display");
         irFeedDisplay = root.Q<VisualElement>("ir-feed-display");
         colorFeedDisplay = root.Q<VisualElement>("color-feed-display");
         lidarFeedDisplay = root.Q<VisualElement>("lidar-feed-display");
-        
-        Debug.Log($"Displays found - Depth: {depthFeedDisplay != null}, IR: {irFeedDisplay != null}, Color: {colorFeedDisplay != null}, Lidar: {lidarFeedDisplay != null}");
         
         // Get Status Elements
         depthStatus = root.Q<Label>("depth-status");
@@ -160,7 +156,7 @@ public class DroneEngineController : MonoBehaviour
         connectAllBtn?.RegisterCallback<ClickEvent>(evt => ConnectAll());
         disconnectAllBtn?.RegisterCallback<ClickEvent>(evt => DisconnectAll());
         
-        // Initialize textures with bilinear filtering
+        // Initialize textures
         depthTexture = new Texture2D(640, 480, TextureFormat.RGB24, false);
         depthTexture.filterMode = FilterMode.Bilinear;
         
@@ -170,25 +166,33 @@ public class DroneEngineController : MonoBehaviour
         colorTexture = new Texture2D(1920, 1080, TextureFormat.RGB24, false);
         colorTexture.filterMode = FilterMode.Bilinear;
         
-        // Update initial UI state
         UpdateConnectionUI();
     }
     
     void SubscribeToTopics()
     {
-        ros.Subscribe<CompressedImageMsg>(depthTopic, OnDepthImageReceived);
-        ros.Subscribe<CompressedImageMsg>(irTopic, OnIRImageReceived);
-        ros.Subscribe<CompressedImageMsg>(colorTopic, OnColorImageReceived);
+        if (useCompressedTopics)
+        {
+            ros.Subscribe<CompressedImageMsg>(depthTopic + "/compressed", OnDepthImageCompressed);
+            ros.Subscribe<CompressedImageMsg>(irTopic + "/compressed", OnIRImageCompressed);
+            ros.Subscribe<CompressedImageMsg>(colorTopic + "/compressed", OnColorImageCompressed);
+            Debug.Log("Subscribed to COMPRESSED image topics");
+        }
+        else
+        {
+            ros.Subscribe<ImageMsg>(depthTopic, OnDepthImageRaw);
+            ros.Subscribe<ImageMsg>(irTopic, OnIRImageRaw);
+            ros.Subscribe<ImageMsg>(colorTopic, OnColorImageRaw);
+            Debug.Log("Subscribed to RAW image topics");
+        }
         
-        Debug.Log($"Subscribed to topics:\n- {depthTopic}\n- {irTopic}\n- {colorTopic}");
+        Debug.Log($"Topics:\n- {depthTopic}\n- {irTopic}\n- {colorTopic}");
     }
     
-    #region ROS Callbacks
+    #region ROS Callbacks - Raw Images
     
-    void OnDepthImageReceived(CompressedImageMsg msg)
+    void OnDepthImageRaw(ImageMsg msg)
     {
-        Debug.Log($"Depth image received - Size: {msg.data.Length} bytes, Connected: {depthConnected}");
-        
         if (!depthConnected) return;
         
         if (skipFrames)
@@ -199,19 +203,19 @@ public class DroneEngineController : MonoBehaviour
         
         if (depthQueue.Count < 2)
         {
-            depthQueue.Enqueue(msg.data);
-            Debug.Log($"Depth image queued - Queue size: {depthQueue.Count}");
-        }
-        else
-        {
-            Debug.LogWarning("Depth queue full, skipping frame");
+            ImageData imgData = new ImageData
+            {
+                data = msg.data,
+                width = (int)msg.width,
+                height = (int)msg.height,
+                encoding = msg.encoding
+            };
+            depthQueue.Enqueue(imgData);
         }
     }
     
-    void OnIRImageReceived(CompressedImageMsg msg)
+    void OnIRImageRaw(ImageMsg msg)
     {
-        Debug.Log($"IR image received - Size: {msg.data.Length} bytes, Connected: {irConnected}");
-        
         if (!irConnected) return;
         
         if (skipFrames)
@@ -222,14 +226,19 @@ public class DroneEngineController : MonoBehaviour
         
         if (irQueue.Count < 2)
         {
-            irQueue.Enqueue(msg.data);
+            ImageData imgData = new ImageData
+            {
+                data = msg.data,
+                width = (int)msg.width,
+                height = (int)msg.height,
+                encoding = msg.encoding
+            };
+            irQueue.Enqueue(imgData);
         }
     }
     
-    void OnColorImageReceived(CompressedImageMsg msg)
+    void OnColorImageRaw(ImageMsg msg)
     {
-        Debug.Log($"Color image received - Size: {msg.data.Length} bytes, Connected: {colorConnected}");
-        
         if (!colorConnected) return;
         
         if (skipFrames)
@@ -240,7 +249,87 @@ public class DroneEngineController : MonoBehaviour
         
         if (colorQueue.Count < 2)
         {
-            colorQueue.Enqueue(msg.data);
+            ImageData imgData = new ImageData
+            {
+                data = msg.data,
+                width = (int)msg.width,
+                height = (int)msg.height,
+                encoding = msg.encoding
+            };
+            colorQueue.Enqueue(imgData);
+        }
+    }
+    
+    #endregion
+    
+    #region ROS Callbacks - Compressed Images
+    
+    void OnDepthImageCompressed(CompressedImageMsg msg)
+    {
+        if (!depthConnected) return;
+        
+        if (skipFrames)
+        {
+            depthFrameCounter++;
+            if (depthFrameCounter % frameSkipCount != 0) return;
+        }
+        
+        if (depthQueue.Count < 2)
+        {
+            ImageData imgData = new ImageData
+            {
+                data = msg.data,
+                width = 640,
+                height = 480,
+                encoding = "compressed"
+            };
+            depthQueue.Enqueue(imgData);
+        }
+    }
+    
+    void OnIRImageCompressed(CompressedImageMsg msg)
+    {
+        if (!irConnected) return;
+        
+        if (skipFrames)
+        {
+            irFrameCounter++;
+            if (irFrameCounter % frameSkipCount != 0) return;
+        }
+        
+        if (irQueue.Count < 2)
+        {
+            ImageData imgData = new ImageData
+            {
+                data = msg.data,
+                width = 640,
+                height = 480,
+                encoding = "compressed"
+            };
+            irQueue.Enqueue(imgData);
+        }
+    }
+    
+    void OnColorImageCompressed(CompressedImageMsg msg)
+    {
+        if (!colorConnected) return;
+        
+        if (skipFrames)
+        {
+            colorFrameCounter++;
+            if (colorFrameCounter % frameSkipCount != 0) return;
+        }
+        
+        if (colorQueue.Count < 2)
+        {
+            ImageData imgData = new ImageData
+            {
+                data = msg.data,
+                width = 1920,
+                height = 1080,
+                encoding = "compressed"
+            };
+            colorQueue.Enqueue(imgData);
         }
     }
     
@@ -248,7 +337,6 @@ public class DroneEngineController : MonoBehaviour
     
     void Update()
     {
-        // Process queued images on main thread
         ProcessImageQueue(depthQueue, depthTexture, depthFeedDisplay);
         ProcessImageQueue(irQueue, irTexture, irFeedDisplay);
         ProcessImageQueue(colorQueue, colorTexture, colorFeedDisplay);
@@ -256,57 +344,117 @@ public class DroneEngineController : MonoBehaviour
         UpdateFPS();
     }
     
-    void ProcessImageQueue(ConcurrentQueue<byte[]> queue, Texture2D texture, VisualElement display)
+    void ProcessImageQueue(ConcurrentQueue<ImageData> queue, Texture2D texture, VisualElement display)
     {
-        if (queue.TryDequeue(out byte[] imageData))
+        if (queue.TryDequeue(out ImageData imgData))
         {
-            Debug.Log($"Processing image - Data size: {imageData.Length}, Display null: {display == null}, Texture null: {texture == null}");
-            
             try
             {
-                bool loaded = texture.LoadImage(imageData);
-                Debug.Log($"Texture LoadImage result: {loaded}");
-                
-                if (loaded)
+                if (imgData.encoding == "compressed")
                 {
-                    UpdateFeedDisplay(display, texture);
-                    Debug.Log("Feed display updated successfully");
+                    texture.LoadImage(imgData.data);
+                    texture.Apply();
                 }
+                else
+                {
+                    byte[] rgbData = ConvertRawToRGB(imgData);
+                    
+                    if (texture.width != imgData.width || texture.height != imgData.height)
+                    {
+                        texture.Reinitialize(imgData.width, imgData.height);
+                    }
+                    
+                    texture.LoadRawTextureData(rgbData);
+                    texture.Apply();
+                }
+                
+                UpdateFeedDisplay(display, texture);
             }
             catch (Exception e)
             {
-                Debug.LogError($"Error processing image: {e.Message}\n{e.StackTrace}");
+                Debug.LogError($"Error processing image: {e.Message}");
             }
         }
     }
     
+    byte[] ConvertRawToRGB(ImageData imgData)
+    {
+        int pixelCount = imgData.width * imgData.height;
+        byte[] rgb = new byte[pixelCount * 3];
+        
+        if (imgData.encoding == "mono8")
+        {
+            for (int i = 0; i < pixelCount; i++)
+            {
+                byte value = imgData.data[i];
+                rgb[i * 3] = value;
+                rgb[i * 3 + 1] = value;
+                rgb[i * 3 + 2] = value;
+            }
+        }
+        else if (imgData.encoding == "16UC1")
+        {
+            for (int i = 0; i < pixelCount; i++)
+            {
+                ushort value = (ushort)((imgData.data[i * 2 + 1] << 8) | imgData.data[i * 2]);
+                byte normalized = (byte)(value / 256);
+                rgb[i * 3] = normalized;
+                rgb[i * 3 + 1] = normalized;
+                rgb[i * 3 + 2] = normalized;
+            }
+        }
+        else if (imgData.encoding == "rgb8")
+        {
+            Array.Copy(imgData.data, rgb, rgb.Length);
+        }
+        else if (imgData.encoding == "bgr8")
+        {
+            for (int i = 0; i < pixelCount; i++)
+            {
+                rgb[i * 3] = imgData.data[i * 3 + 2];
+                rgb[i * 3 + 1] = imgData.data[i * 3 + 1];
+                rgb[i * 3 + 2] = imgData.data[i * 3];
+            }
+        }
+        else if (imgData.encoding == "rgba8" || imgData.encoding == "bgra8")
+        {
+            bool isBGR = imgData.encoding == "bgra8";
+            for (int i = 0; i < pixelCount; i++)
+            {
+                if (isBGR)
+                {
+                    rgb[i * 3] = imgData.data[i * 4 + 2];
+                    rgb[i * 3 + 1] = imgData.data[i * 4 + 1];
+                    rgb[i * 3 + 2] = imgData.data[i * 4];
+                }
+                else
+                {
+                    rgb[i * 3] = imgData.data[i * 4];
+                    rgb[i * 3 + 1] = imgData.data[i * 4 + 1];
+                    rgb[i * 3 + 2] = imgData.data[i * 4 + 2];
+                }
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"Unsupported encoding: {imgData.encoding}");
+            Array.Copy(imgData.data, rgb, Mathf.Min(rgb.Length, imgData.data.Length));
+        }
+        
+        return rgb;
+    }
+    
     void UpdateFeedDisplay(VisualElement display, Texture2D texture)
     {
-        if (display == null)
-        {
-            Debug.LogError("Display element is null!");
-            return;
-        }
+        if (display == null || texture == null) return;
         
-        if (texture == null)
-        {
-            Debug.LogError("Texture is null!");
-            return;
-        }
-        
-        Debug.Log($"Updating display - Texture size: {texture.width}x{texture.height}, Display children: {display.childCount}");
-        
-        // Clear placeholder text on first image
         if (display.childCount > 0)
         {
             display.Clear();
-            Debug.Log("Cleared placeholder text");
         }
         
         display.style.backgroundImage = new StyleBackground(texture);
         display.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
-        
-        Debug.Log("Background image set successfully");
     }
     
     void UpdateFPS()
@@ -324,7 +472,6 @@ public class DroneEngineController : MonoBehaviour
             {
                 sensorFps.text = $"{fps:F0} FPS";
                 
-                // Color code FPS
                 if (fps >= 25)
                     sensorFps.style.color = new Color(0.39f, 0.71f, 1f);
                 else if (fps >= 15)
@@ -380,7 +527,7 @@ public class DroneEngineController : MonoBehaviour
         {
             depthFeedDisplay?.Clear();
             depthFeedDisplay.style.backgroundImage = null;
-            depthQueue = new ConcurrentQueue<byte[]>();
+            depthQueue = new ConcurrentQueue<ImageData>();
             RestorePlaceholder(depthFeedDisplay, "DEPTH CAMERA", "640 × 480");
         }
         UpdateConnectionUI();
@@ -393,7 +540,7 @@ public class DroneEngineController : MonoBehaviour
         {
             irFeedDisplay?.Clear();
             irFeedDisplay.style.backgroundImage = null;
-            irQueue = new ConcurrentQueue<byte[]>();
+            irQueue = new ConcurrentQueue<ImageData>();
             RestorePlaceholder(irFeedDisplay, "INFRARED", "640 × 480");
         }
         UpdateConnectionUI();
@@ -406,7 +553,7 @@ public class DroneEngineController : MonoBehaviour
         {
             colorFeedDisplay?.Clear();
             colorFeedDisplay.style.backgroundImage = null;
-            colorQueue = new ConcurrentQueue<byte[]>();
+            colorQueue = new ConcurrentQueue<ImageData>();
             RestorePlaceholder(colorFeedDisplay, "RGB CAMERA", "1920 × 1080");
         }
         UpdateConnectionUI();
@@ -416,7 +563,6 @@ public class DroneEngineController : MonoBehaviour
     {
         lidarConnected = !lidarConnected;
         UpdateConnectionUI();
-        Debug.Log("LiDAR toggle - not yet implemented");
     }
     
     void ConnectAll()
@@ -435,7 +581,6 @@ public class DroneEngineController : MonoBehaviour
         colorConnected = false;
         lidarConnected = false;
         
-        // Clear displays
         depthFeedDisplay?.Clear();
         irFeedDisplay?.Clear();
         colorFeedDisplay?.Clear();
@@ -444,15 +589,13 @@ public class DroneEngineController : MonoBehaviour
         irFeedDisplay.style.backgroundImage = null;
         colorFeedDisplay.style.backgroundImage = null;
         
-        // Restore placeholders
         RestorePlaceholder(depthFeedDisplay, "DEPTH CAMERA", "640 × 480");
         RestorePlaceholder(irFeedDisplay, "INFRARED", "640 × 480");
         RestorePlaceholder(colorFeedDisplay, "RGB CAMERA", "1920 × 1080");
         
-        // Clear queues
-        depthQueue = new ConcurrentQueue<byte[]>();
-        irQueue = new ConcurrentQueue<byte[]>();
-        colorQueue = new ConcurrentQueue<byte[]>();
+        depthQueue = new ConcurrentQueue<ImageData>();
+        irQueue = new ConcurrentQueue<ImageData>();
+        colorQueue = new ConcurrentQueue<ImageData>();
         
         UpdateConnectionUI();
     }
@@ -482,19 +625,16 @@ public class DroneEngineController : MonoBehaviour
     
     void UpdateConnectionUI()
     {
-        // Update status indicators
         UpdateStatusLabel(depthStatus, depthConnected);
         UpdateStatusLabel(irStatus, irConnected);
         UpdateStatusLabel(colorStatus, colorConnected);
         UpdateStatusLabel(lidarStatus, lidarConnected);
         
-        // Update button text and styles
         UpdateButtonConnection(depthConnectBtn, depthConnected);
         UpdateButtonConnection(irConnectBtn, irConnected);
         UpdateButtonConnection(colorConnectBtn, colorConnected);
         UpdateButtonConnection(lidarConnectBtn, lidarConnected);
         
-        // Update sensor count
         int connectedCount = (depthConnected ? 1 : 0) + (irConnected ? 1 : 0) + 
                            (colorConnected ? 1 : 0) + (lidarConnected ? 1 : 0);
         
@@ -510,7 +650,6 @@ public class DroneEngineController : MonoBehaviour
                 sensorsOnlineCount.style.color = new Color(1f, 0.39f, 0.39f);
         }
         
-        // Update main status indicator
         if (statusIndicator != null)
         {
             statusIndicator.style.color = connectedCount > 0 ? 
@@ -537,7 +676,6 @@ public class DroneEngineController : MonoBehaviour
         
         if (connected)
         {
-            // Disconnect style (red)
             button.style.backgroundColor = new Color(1f, 0.39f, 0.39f, 0.15f);
             button.style.borderTopColor = new Color(1f, 0.39f, 0.39f);
             button.style.borderBottomColor = new Color(1f, 0.39f, 0.39f);
@@ -547,7 +685,6 @@ public class DroneEngineController : MonoBehaviour
         }
         else
         {
-            // Connect style (green)
             button.style.backgroundColor = new Color(0f, 1f, 0.5f, 0.15f);
             button.style.borderTopColor = new Color(0f, 1f, 0.5f);
             button.style.borderBottomColor = new Color(0f, 1f, 0.5f);
@@ -561,7 +698,6 @@ public class DroneEngineController : MonoBehaviour
     
     void OnDestroy()
     {
-        // Cleanup textures
         if (depthTexture != null) Destroy(depthTexture);
         if (irTexture != null) Destroy(irTexture);
         if (colorTexture != null) Destroy(colorTexture);
