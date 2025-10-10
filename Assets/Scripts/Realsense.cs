@@ -2,243 +2,250 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Unity.Robotics.ROSTCPConnector;
 using RosMessageTypes.Sensor;
-using System;
-using System.Collections.Concurrent;
 
-/// <summary>
-/// OPTIMIZED RealSense D455 camera feed receiver
-/// Uses threading and texture pooling for better performance
-/// </summary>
-public class RealSenseFeedReceiver : MonoBehaviour
+public class CameraFeedController : MonoBehaviour
 {
-    [Header("ROS Topics")]
-    [SerializeField] private string depthTopic = "/realsense/depth/compressed";
-    [SerializeField] private string irTopic = "/realsense/infrared/compressed";
-    [SerializeField] private string colorTopic = "/realsense/color/compressed";
-    
     [Header("UI Document")]
     [SerializeField] private UIDocument uiDocument;
     
-    [Header("Performance Settings")]
-    [SerializeField] private bool skipFrames = false; // Enable if still laggy
-    [SerializeField] private int frameSkipCount = 1; // Process every Nth frame
+    [Header("ROS Topics")]
+    [SerializeField] private string depthTopicName = "/camera/depth/image_rect_raw";
+    [SerializeField] private string irTopicName = "/camera/infra1/image_rect_raw";
+    [SerializeField] private string colorTopicName = "/camera/color/image_raw";
+    
+    [Header("Camera Settings")]
+    [SerializeField] private int targetWidth = 640;
+    [SerializeField] private int targetHeight = 480;
     
     // UI Elements
     private VisualElement depthFeedDisplay;
     private VisualElement irFeedDisplay;
     private VisualElement colorFeedDisplay;
-    private Label depthStatus;
-    private Label irStatus;
-    private Label colorStatus;
-    private Label sensorsOnlineCount;
-    private Label sensorFps;
+    private Label sensorFpsLabel;
     
-    private Button depthConnectBtn;
-    private Button irConnectBtn;
-    private Button colorConnectBtn;
-    
-    // Textures for displaying camera feeds
+    // Textures for camera feeds
     private Texture2D depthTexture;
     private Texture2D irTexture;
     private Texture2D colorTexture;
     
-    // Connection states
-    private bool depthConnected = false;
-    private bool irConnected = false;
-    private bool colorConnected = false;
-    
-    // FPS calculation
-    private float lastFrameTime;
-    private int frameCount;
-    private float fps = 0f;
-    
-    // Frame skipping
-    private int depthFrameCounter = 0;
-    private int irFrameCounter = 0;
-    private int colorFrameCounter = 0;
-    
-    // Thread-safe queues for image data
-    private ConcurrentQueue<byte[]> depthQueue = new ConcurrentQueue<byte[]>();
-    private ConcurrentQueue<byte[]> irQueue = new ConcurrentQueue<byte[]>();
-    private ConcurrentQueue<byte[]> colorQueue = new ConcurrentQueue<byte[]>();
-    
+    // ROS Connection
     private ROSConnection ros;
+    
+    // FPS Tracking
+    private float lastUpdateTime;
+    private int frameCount;
+    private float currentFPS;
     
     void Start()
     {
         // Get ROS connection
         ros = ROSConnection.GetOrCreateInstance();
         
+        // Subscribe to ROS topics
+        ros.Subscribe<ImageMsg>(depthTopicName, DepthImageCallback);
+        ros.Subscribe<ImageMsg>(irTopicName, IRImageCallback);
+        ros.Subscribe<ImageMsg>(colorTopicName, ColorImageCallback);
+        
         // Initialize UI
         InitializeUI();
         
-        // Subscribe to ROS topics
-        SubscribeToTopics();
+        // Initialize textures
+        InitializeTextures();
         
-        Debug.Log("RealSense Feed Receiver initialized - OPTIMIZED MODE");
+        Debug.Log("Camera Feed Controller initialized. Subscribed to ROS topics.");
     }
     
     void InitializeUI()
     {
-        if (uiDocument == null)
-        {
-            uiDocument = GetComponent<UIDocument>();
-        }
-        
         var root = uiDocument.rootVisualElement;
         
-        // Get display elements
+        // Get feed display elements
         depthFeedDisplay = root.Q<VisualElement>("depth-feed-display");
         irFeedDisplay = root.Q<VisualElement>("ir-feed-display");
         colorFeedDisplay = root.Q<VisualElement>("color-feed-display");
+        sensorFpsLabel = root.Q<Label>("sensor-fps");
         
-        // Get status labels
-        depthStatus = root.Q<Label>("depth-status");
-        irStatus = root.Q<Label>("ir-status");
-        colorStatus = root.Q<Label>("color-status");
-        sensorsOnlineCount = root.Q<Label>("sensors-online-count");
-        sensorFps = root.Q<Label>("sensor-fps");
-        
-        // Get buttons
-        depthConnectBtn = root.Q<Button>("depth-connect-btn");
-        irConnectBtn = root.Q<Button>("ir-connect-btn");
-        colorConnectBtn = root.Q<Button>("color-connect-btn");
-        
-        // Connect all/disconnect all buttons
-        var connectAllBtn = root.Q<Button>("connect-all-btn");
-        var disconnectAllBtn = root.Q<Button>("disconnect-all-btn");
-        
-        // Setup button callbacks
-        depthConnectBtn?.RegisterCallback<ClickEvent>(evt => ToggleDepthConnection());
-        irConnectBtn?.RegisterCallback<ClickEvent>(evt => ToggleIRConnection());
-        colorConnectBtn?.RegisterCallback<ClickEvent>(evt => ToggleColorConnection());
-        connectAllBtn?.RegisterCallback<ClickEvent>(evt => ConnectAll());
-        disconnectAllBtn?.RegisterCallback<ClickEvent>(evt => DisconnectAll());
-        
-        // Initialize textures with filtering for better performance
-        depthTexture = new Texture2D(640, 480, TextureFormat.RGB24, false);
-        depthTexture.filterMode = FilterMode.Bilinear;
-        
-        irTexture = new Texture2D(640, 480, TextureFormat.RGB24, false);
-        irTexture.filterMode = FilterMode.Bilinear;
-        
-        colorTexture = new Texture2D(640, 480, TextureFormat.RGB24, false);
-        colorTexture.filterMode = FilterMode.Bilinear;
-        
-        // Set initial connection state to true
-        depthConnected = true;
-        irConnected = true;
-        colorConnected = true;
-        UpdateConnectionUI();
-        
-        lastFrameTime = Time.time;
-    }
-    
-    void SubscribeToTopics()
-    {
-        // Subscribe to compressed image topics
-        ros.Subscribe<CompressedImageMsg>(depthTopic, OnDepthImageReceived);
-        ros.Subscribe<CompressedImageMsg>(irTopic, OnIRImageReceived);
-        ros.Subscribe<CompressedImageMsg>(colorTopic, OnColorImageReceived);
-    }
-    
-    void OnDepthImageReceived(CompressedImageMsg msg)
-    {
-        if (!depthConnected) return;
-        
-        // Frame skipping if enabled
-        if (skipFrames)
+        if (depthFeedDisplay == null || irFeedDisplay == null || colorFeedDisplay == null)
         {
-            depthFrameCounter++;
-            if (depthFrameCounter % frameSkipCount != 0) return;
-        }
-        
-        // Queue the data for processing in Update()
-        if (depthQueue.Count < 2) // Limit queue size
-        {
-            depthQueue.Enqueue(msg.data);
+            Debug.LogError("Could not find camera feed display elements in UI!");
         }
     }
     
-    void OnIRImageReceived(CompressedImageMsg msg)
+    void InitializeTextures()
     {
-        if (!irConnected) return;
+        depthTexture = new Texture2D(targetWidth, targetHeight, TextureFormat.RGB24, false);
+        irTexture = new Texture2D(targetWidth, targetHeight, TextureFormat.RGB24, false);
+        colorTexture = new Texture2D(targetWidth, targetHeight, TextureFormat.RGB24, false);
         
-        if (skipFrames)
-        {
-            irFrameCounter++;
-            if (irFrameCounter % frameSkipCount != 0) return;
-        }
-        
-        if (irQueue.Count < 2)
-        {
-            irQueue.Enqueue(msg.data);
-        }
+        depthTexture.filterMode = FilterMode.Point;
+        irTexture.filterMode = FilterMode.Point;
+        colorTexture.filterMode = FilterMode.Point;
     }
     
-    void OnColorImageReceived(CompressedImageMsg msg)
+    void DepthImageCallback(ImageMsg imageMsg)
     {
-        if (!colorConnected) return;
-        
-        if (skipFrames)
-        {
-            colorFrameCounter++;
-            if (colorFrameCounter % frameSkipCount != 0) return;
-        }
-        
-        if (colorQueue.Count < 2)
-        {
-            colorQueue.Enqueue(msg.data);
-        }
-    }
-    
-    void Update()
-    {
-        // Process queued images on main thread
-        ProcessImageQueue(depthQueue, depthTexture, depthFeedDisplay);
-        ProcessImageQueue(irQueue, irTexture, irFeedDisplay);
-        ProcessImageQueue(colorQueue, colorTexture, colorFeedDisplay);
-        
+        ProcessImageMessage(imageMsg, depthTexture, depthFeedDisplay, true);
         UpdateFPS();
     }
     
-    void ProcessImageQueue(ConcurrentQueue<byte[]> queue, Texture2D texture, VisualElement display)
+    void IRImageCallback(ImageMsg imageMsg)
     {
-        if (queue.TryDequeue(out byte[] imageData))
+        ProcessImageMessage(imageMsg, irTexture, irFeedDisplay, false);
+    }
+    
+    void ColorImageCallback(ImageMsg imageMsg)
+    {
+        ProcessImageMessage(imageMsg, colorTexture, colorFeedDisplay, false);
+    }
+    
+    void ProcessImageMessage(ImageMsg imageMsg, Texture2D texture, VisualElement displayElement, bool isDepth)
+    {
+        if (imageMsg == null || imageMsg.data == null || imageMsg.data.Length == 0)
         {
-            try
-            {
-                // Load image data into texture
-                texture.LoadImage(imageData);
-                
-                // Only apply if display is visible
-                if (display != null && display.style.backgroundImage.value == null || 
-                    display.style.backgroundImage.value.texture != texture)
-                {
-                    UpdateFeedDisplay(display, texture);
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Error processing image: {e.Message}");
-            }
+            Debug.LogWarning("Received empty image message");
+            return;
+        }
+        
+        // Resize texture if dimensions don't match
+        if (texture.width != (int)imageMsg.width || texture.height != (int)imageMsg.height)
+        {
+            texture.Reinitialize((int)imageMsg.width, (int)imageMsg.height);
+        }
+        
+        // Convert image data based on encoding
+        Color32[] pixels = ConvertImageData(imageMsg, isDepth);
+        
+        if (pixels != null)
+        {
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            
+            // Update UI element with texture
+            UpdateDisplayElement(displayElement, texture);
         }
     }
     
-    void UpdateFeedDisplay(VisualElement display, Texture2D texture)
+    Color32[] ConvertImageData(ImageMsg imageMsg, bool isDepth)
     {
-        if (display != null && texture != null)
+        int width = (int)imageMsg.width;
+        int height = (int)imageMsg.height;
+        Color32[] pixels = new Color32[width * height];
+        
+        string encoding = imageMsg.encoding;
+        
+        try
         {
-            // Clear placeholder text only once
-            if (display.childCount > 0)
+            if (encoding == "rgb8")
             {
-                display.Clear();
+                // RGB8 encoding
+                for (int i = 0; i < width * height; i++)
+                {
+                    int dataIndex = i * 3;
+                    // Flip vertically for Unity (ROS images are top-down, Unity is bottom-up)
+                    int row = i / width;
+                    int col = i % width;
+                    int flippedIndex = (height - 1 - row) * width + col;
+                    
+                    pixels[flippedIndex] = new Color32(
+                        imageMsg.data[dataIndex],
+                        imageMsg.data[dataIndex + 1],
+                        imageMsg.data[dataIndex + 2],
+                        255
+                    );
+                }
             }
-            
-            // Set background image
-            display.style.backgroundImage = new StyleBackground(texture);
-            display.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+            else if (encoding == "bgr8")
+            {
+                // BGR8 encoding (common for OpenCV)
+                for (int i = 0; i < width * height; i++)
+                {
+                    int dataIndex = i * 3;
+                    int row = i / width;
+                    int col = i % width;
+                    int flippedIndex = (height - 1 - row) * width + col;
+                    
+                    pixels[flippedIndex] = new Color32(
+                        imageMsg.data[dataIndex + 2], // R
+                        imageMsg.data[dataIndex + 1], // G
+                        imageMsg.data[dataIndex],     // B
+                        255
+                    );
+                }
+            }
+            else if (encoding == "mono8")
+            {
+                // Grayscale encoding (IR cameras)
+                for (int i = 0; i < width * height; i++)
+                {
+                    int row = i / width;
+                    int col = i % width;
+                    int flippedIndex = (height - 1 - row) * width + col;
+                    
+                    byte value = imageMsg.data[i];
+                    pixels[flippedIndex] = new Color32(value, value, value, 255);
+                }
+            }
+            else if (encoding == "16UC1" || encoding == "mono16")
+            {
+                // 16-bit depth data
+                for (int i = 0; i < width * height; i++)
+                {
+                    int dataIndex = i * 2;
+                    int row = i / width;
+                    int col = i % width;
+                    int flippedIndex = (height - 1 - row) * width + col;
+                    
+                    // Convert 16-bit depth to 8-bit grayscale for visualization
+                    ushort depthValue = (ushort)(imageMsg.data[dataIndex] | (imageMsg.data[dataIndex + 1] << 8));
+                    
+                    // Normalize depth value (adjust these values based on your camera's range)
+                    float normalizedDepth = Mathf.Clamp01(depthValue / 5000.0f);
+                    
+                    // Apply colormap for depth visualization
+                    if (isDepth)
+                    {
+                        Color depthColor = GetDepthColor(normalizedDepth);
+                        pixels[flippedIndex] = depthColor;
+                    }
+                    else
+                    {
+                        byte value = (byte)(normalizedDepth * 255);
+                        pixels[flippedIndex] = new Color32(value, value, value, 255);
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"Unsupported image encoding: {encoding}");
+                return null;
+            }
         }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error converting image data: {e.Message}");
+            return null;
+        }
+        
+        return pixels;
+    }
+    
+    Color32 GetDepthColor(float normalizedDepth)
+    {
+        // Apply a color gradient for depth visualization (blue = close, red = far)
+        float hue = (1.0f - normalizedDepth) * 0.7f; // 0.7 = blue to red range
+        Color color = Color.HSVToRGB(hue, 1.0f, 1.0f);
+        return color;
+    }
+    
+    void UpdateDisplayElement(VisualElement element, Texture2D texture)
+    {
+        if (element == null || texture == null) return;
+        
+        // Remove placeholder labels
+        element.Clear();
+        
+        // Set texture as background
+        element.style.backgroundImage = new StyleBackground(texture);
     }
     
     void UpdateFPS()
@@ -246,153 +253,30 @@ public class RealSenseFeedReceiver : MonoBehaviour
         frameCount++;
         float currentTime = Time.time;
         
-        if (currentTime - lastFrameTime >= 0.5f) // Update twice per second
+        if (currentTime - lastUpdateTime >= 1.0f)
         {
-            fps = frameCount / (currentTime - lastFrameTime);
+            currentFPS = frameCount / (currentTime - lastUpdateTime);
             frameCount = 0;
-            lastFrameTime = currentTime;
+            lastUpdateTime = currentTime;
             
-            if (sensorFps != null)
+            if (sensorFpsLabel != null)
             {
-                sensorFps.text = $"{fps:F0} FPS";
+                sensorFpsLabel.text = $"{Mathf.RoundToInt(currentFPS)} FPS";
             }
-        }
-    }
-    
-    void ToggleDepthConnection()
-    {
-        depthConnected = !depthConnected;
-        if (!depthConnected)
-        {
-            depthFeedDisplay?.Clear();
-            depthFeedDisplay.style.backgroundImage = null;
-            depthQueue = new ConcurrentQueue<byte[]>(); // Clear queue
-        }
-        UpdateConnectionUI();
-    }
-    
-    void ToggleIRConnection()
-    {
-        irConnected = !irConnected;
-        if (!irConnected)
-        {
-            irFeedDisplay?.Clear();
-            irFeedDisplay.style.backgroundImage = null;
-            irQueue = new ConcurrentQueue<byte[]>();
-        }
-        UpdateConnectionUI();
-    }
-    
-    void ToggleColorConnection()
-    {
-        colorConnected = !colorConnected;
-        if (!colorConnected)
-        {
-            colorFeedDisplay?.Clear();
-            colorFeedDisplay.style.backgroundImage = null;
-            colorQueue = new ConcurrentQueue<byte[]>();
-        }
-        UpdateConnectionUI();
-    }
-    
-    void ConnectAll()
-    {
-        depthConnected = true;
-        irConnected = true;
-        colorConnected = true;
-        UpdateConnectionUI();
-    }
-    
-    void DisconnectAll()
-    {
-        depthConnected = false;
-        irConnected = false;
-        colorConnected = false;
-        
-        depthFeedDisplay?.Clear();
-        irFeedDisplay?.Clear();
-        colorFeedDisplay?.Clear();
-        
-        depthFeedDisplay.style.backgroundImage = null;
-        irFeedDisplay.style.backgroundImage = null;
-        colorFeedDisplay.style.backgroundImage = null;
-        
-        // Clear all queues
-        depthQueue = new ConcurrentQueue<byte[]>();
-        irQueue = new ConcurrentQueue<byte[]>();
-        colorQueue = new ConcurrentQueue<byte[]>();
-        
-        UpdateConnectionUI();
-    }
-    
-    void UpdateConnectionUI()
-    {
-        // Update status indicators
-        UpdateStatusLabel(depthStatus, depthConnected);
-        UpdateStatusLabel(irStatus, irConnected);
-        UpdateStatusLabel(colorStatus, colorConnected);
-        
-        // Update button text
-        if (depthConnectBtn != null)
-            depthConnectBtn.text = depthConnected ? "DISCONNECT" : "CONNECT";
-        if (irConnectBtn != null)
-            irConnectBtn.text = irConnected ? "DISCONNECT" : "CONNECT";
-        if (colorConnectBtn != null)
-            colorConnectBtn.text = colorConnected ? "DISCONNECT" : "CONNECT";
-        
-        // Update button colors
-        UpdateButtonStyle(depthConnectBtn, depthConnected);
-        UpdateButtonStyle(irConnectBtn, irConnected);
-        UpdateButtonStyle(colorConnectBtn, colorConnected);
-        
-        // Update sensor count
-        int connectedCount = (depthConnected ? 1 : 0) + (irConnected ? 1 : 0) + (colorConnected ? 1 : 0);
-        if (sensorsOnlineCount != null)
-        {
-            sensorsOnlineCount.text = $"{connectedCount}/3";
-        }
-    }
-    
-    void UpdateStatusLabel(Label label, bool connected)
-    {
-        if (label != null)
-        {
-            label.text = connected ? "● CONNECTED" : "● DISCONNECTED";
-            label.style.color = connected ? 
-                new Color(0, 1, 0.5f) : 
-                new Color(1, 0.4f, 0.4f);
-        }
-    }
-    
-    void UpdateButtonStyle(Button button, bool connected)
-    {
-        if (button == null) return;
-        
-        if (connected)
-        {
-            // Disconnect style (red)
-            button.style.backgroundColor = new Color(1f, 0.4f, 0.4f, 0.15f);
-            button.style.borderTopColor = new Color(1f, 0.4f, 0.4f);
-            button.style.borderBottomColor = new Color(1f, 0.4f, 0.4f);
-            button.style.borderLeftColor = new Color(1f, 0.4f, 0.4f);
-            button.style.borderRightColor = new Color(1f, 0.4f, 0.4f);
-            button.style.color = new Color(1f, 0.4f, 0.4f);
-        }
-        else
-        {
-            // Connect style (green)
-            button.style.backgroundColor = new Color(0f, 1f, 0.5f, 0.15f);
-            button.style.borderTopColor = new Color(0f, 1f, 0.5f);
-            button.style.borderBottomColor = new Color(0f, 1f, 0.5f);
-            button.style.borderLeftColor = new Color(0f, 1f, 0.5f);
-            button.style.borderRightColor = new Color(0f, 1f, 0.5f);
-            button.style.color = new Color(0f, 1f, 0.5f);
         }
     }
     
     void OnDestroy()
     {
-        // Cleanup textures
+        // Unsubscribe from ROS topics
+        if (ros != null)
+        {
+            ros.Unsubscribe(depthTopicName);
+            ros.Unsubscribe(irTopicName);
+            ros.Unsubscribe(colorTopicName);
+        }
+        
+        // Destroy textures
         if (depthTexture != null) Destroy(depthTexture);
         if (irTexture != null) Destroy(irTexture);
         if (colorTexture != null) Destroy(colorTexture);
